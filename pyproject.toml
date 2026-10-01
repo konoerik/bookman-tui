@@ -1,0 +1,42 @@
+[project]
+name = "bookman-tui"
+version = "0.1.0"
+description = "Textual terminal front end for the bookman ebook library."
+readme = "README.md"
+authors = [
+    { name = "Erikton Konomi", email = "konoerik@gmail.com" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "bookman",
+    "textual>=8.2.8",
+    "textual-image>=0.12.0",
+]
+
+[project.scripts]
+bookman-tui = "bookman_tui:main"
+
+[build-system]
+requires = ["uv_build>=0.10.7,<0.11.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+bookman = { path = "../bookman", editable = true }
+
+[dependency-groups]
+dev = [
+    "pypdf>=6.19.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "textual-dev>=1.8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tools"]
+filterwarnings = [
+    # textual-image 0.12 (the last release for Python < 3.12) calls a Pillow
+    # API deprecated for Pillow 14; harmless until then.
+    "ignore:Image.Image.getdata is deprecated:DeprecationWarning",
+]
+asyncio_mode = "auto"

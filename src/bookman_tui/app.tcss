@@ -1,0 +1,168 @@
+/* Global styles for bookman-tui. */
+
+/* ---- Browser (BROWSE) ---- */
+
+#books {
+    height: 1fr;
+}
+
+/* Bordered panels: the focused one takes the accent colour. */
+#books, #detail, #detail-screen {
+    border: round $panel-lighten-2;
+    border-title-color: $text-muted;
+}
+
+#books:focus-within, #detail:focus-within, #detail-screen {
+    border: round $accent;
+    border-title-color: $accent;
+}
+
+BrowserScreen.empty #books {
+    align: center middle;
+}
+
+#book-table {
+    height: 1fr;
+}
+
+/* ---- Detail pane (BROWSE-3, BROWSE-7) ---- */
+
+#main {
+    height: 1fr;
+}
+
+#detail {
+    width: 44;
+    height: 1fr;
+    padding: 1 1 0 1;
+}
+
+BrowserScreen.narrow #detail, BrowserScreen.empty #detail {
+    display: none;
+}
+
+#detail-screen {
+    height: 1fr;
+    padding: 1 1 0 1;
+}
+
+BookDetail Static {
+    margin: 0;
+}
+
+#detail-cover {
+    margin-bottom: 1;
+}
+
+#detail-trust, #detail-files-heading {
+    margin-top: 1;
+}
+
+/* A fixed slot sized for a 2:3 cover (cells are about twice as tall as
+   wide, so 28 columns of a 2:3 image are 21 rows). */
+#detail-cover {
+    width: 28;
+    height: 21;
+    align: center middle;
+    background: $panel;
+}
+
+#cover-image {
+    width: 100%;
+    height: auto;
+    max-height: 100%;
+}
+
+#cover-message {
+    width: auto;
+    color: $text-muted;
+}
+
+#detail-title {
+    text-style: bold;
+}
+
+#detail-isbn, #detail-note {
+    color: $text-muted;
+}
+
+#detail-files-heading {
+    text-style: bold;
+    color: $text-muted;
+}
+
+#books-message {
+    width: auto;
+    color: $text-muted;
+}
+
+#status {
+    height: 1;
+    padding: 0 1;
+    background: $panel;
+    color: $text-muted;
+}
+
+/* ---- Start problem (START-4/5) and Setup (SETUP) ---- */
+
+#problem, #setup {
+    width: 72;
+    max-width: 100%;
+    height: auto;
+    margin: 2 0 0 0;
+    padding: 1 2;
+    border: round $primary;
+}
+
+StartProblemScreen, SetupScreen {
+    align: center top;
+}
+
+#problem-heading, #setup-heading {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+#problem-heading {
+    color: $error;
+}
+
+#problem-path {
+    text-style: bold;
+}
+
+#problem-where, #setup-intro {
+    color: $text-muted;
+}
+
+#setup-path {
+    margin-top: 1;
+}
+
+#setup-hint {
+    padding: 0 1;
+    color: $text-muted;
+}
+
+#setup-hint.error {
+    color: $error;
+}
+
+#setup-hint.confirm {
+    color: $warning;
+    text-style: bold;
+}
+
+#problem-reason {
+    margin-top: 1;
+}
+
+#problem-buttons {
+    height: auto;
+    margin-top: 1;
+}
+
+#problem-buttons Button {
+    width: auto;
+    margin-right: 2;
+}
