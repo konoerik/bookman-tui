@@ -5,7 +5,7 @@
 SANDBOX := .dev/sandbox
 MOCK := .dev/mock-library
 BIG := .dev/mock-big
-SANDBOX_ENV := BOOKMAN_CONFIG=$(CURDIR)/$(SANDBOX)/config.json BOOKMAN_LIBRARY=
+SANDBOX_ENV := BOOKMAN_CONFIG=$(CURDIR)/$(SANDBOX)/config.json BOOKMAN_TUI_PREFS=$(CURDIR)/$(SANDBOX)/prefs.json BOOKMAN_LIBRARY=
 
 .PHONY: test run dev console mock try-mock try-big try-real try-firstrun try-empty try-missing try-notlibrary try-badconfig clean-sandbox
 

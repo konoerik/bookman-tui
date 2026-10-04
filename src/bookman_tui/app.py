@@ -23,10 +23,11 @@ from textual.reactive import reactive
 from textual.screen import Screen
 
 from bookman_tui.location import display_path, header_text, not_found_reason, sentence
+from bookman_tui.prefs import Prefs, load_prefs, save_prefs
 from bookman_tui.screens.browser import BrowserScreen
 from bookman_tui.screens.setup import SetupScreen
 from bookman_tui.screens.start_problem import StartProblemScreen
-from bookman_tui.store import Catalog
+from bookman_tui.store import Catalog, Grouping, Sort
 
 
 def reload_summary(before: Catalog | None, after: Catalog) -> str:
@@ -56,11 +57,33 @@ class BookmanApp(App):
     search: reactive[str] = reactive("")
     """The search narrowing the book list (FIND-1); empty for none."""
 
+    sort: reactive[Sort] = reactive(Sort.TITLE)
+    """The book list's order (BROWSE-8); remembered (BROWSE-10)."""
+
+    grouping: reactive[Grouping] = reactive(Grouping.NONE)
+    """The book list's grouping (BROWSE-9); remembered (BROWSE-10)."""
+
     def __init__(self, library: Path | None = None) -> None:
         super().__init__()
         self.library_arg = library
         self.library: Library | None = None
         self.location: LibraryLocation | None = None
+        prefs = load_prefs()
+        self.set_reactive(BookmanApp.sort, prefs.sort)
+        self.set_reactive(BookmanApp.grouping, prefs.grouping)
+
+    def watch_sort(self) -> None:
+        self._save_prefs()
+
+    def watch_grouping(self) -> None:
+        self._save_prefs()
+
+    def _save_prefs(self) -> None:
+        """Remember the sort and grouping for the next session (BROWSE-10)."""
+        try:
+            save_prefs(Prefs(sort=self.sort, grouping=self.grouping))
+        except OSError as error:
+            self.log.warning(f"prefs not saved: {error}")
 
     def on_mount(self) -> None:
         self.open_library()

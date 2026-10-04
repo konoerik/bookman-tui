@@ -152,14 +152,22 @@ it: cover, author, ISBN, formats, and how sure bookman is about the match.
   pane is hidden and `Enter` opens the selected book's details as their own
   screen; `Esc` returns to the list.
 - **BROWSE-8** `o` cycles the sort: Title → Author → Recently added. The
-  footer names the current one. Author sorts by the author as stored (first
-  name first) until bookman offers a surname sort key; Recently added waits
-  on an import date from bookman (see *Open questions*).
+  status line names the sort and grouping in use: `340 books · 12 need
+  review · by author · grouped by status` (the grouping part only when
+  grouped). Author sorts by the author as stored (first name first) until
+  bookman offers a surname sort key, books with no author last, ties in
+  title order. Recently added waits on an import date from bookman (see
+  *Open questions*); until then it is left out and `o` toggles Title and
+  Author.
 - **BROWSE-9** `g` cycles the grouping: none → Author → Status (needs review,
   matched online, checked by you) → Format. Each group has a header row with
   its size (`── Frank Herbert (3) ──`); the selection skips header rows.
-  Books with several formats appear under each of their formats. Search
-  applies within groups.
+  Groups come in a fixed order: authors A–Z as stored, with "Unknown
+  author" last; the three statuses in the order above, a book going where
+  its BROWSE-3 status line puts it; formats in bookman's order (EPUB, PDF,
+  MOBI). Books follow the sort within each group. Books with several
+  formats appear under each of their formats. Search applies within groups:
+  a header counts the matching books, and a group with none is left out.
 - **BROWSE-10** The sort and grouping last used are remembered for the next
   session.
 - **BROWSE-11** `f` shows the selected book in the system file manager

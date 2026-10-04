@@ -10,7 +10,7 @@
 - Nothing that blocks runs on the event loop: imports, re-identify and any other network call go to thread workers (ADR-4)
 - One write operation at a time per library; bookman has no lock [bookman 1.2.0 @ e080149] (ADR-4)
 - The library is opened only through `configured_library` [bookman 1.2.0 @ e080149], never `Library(root)`, which creates and marks any folder it is given
-- The TUI keeps no settings bookman owns and never switches the library; sources config waits on bookman (ADR-6, ADR-8)
+- The TUI keeps no settings bookman owns and never switches the library; sources config waits on bookman (ADR-6, ADR-8); its own display prefs live in a separate file (ADR-9)
 - User-facing behaviour is specified in `docs/FLOWS.md`; interaction conventions in ADR-7
 **Patterns:** Reactive state, message passing, screen composition
 
@@ -82,6 +82,15 @@
 **Decision:** The open library comes only from `--library`, `$BOOKMAN_LIBRARY` or bookman's config (START-1), plus first-run Setup. The header shows its path and origin on every screen (SETTINGS-1). There is no Settings screen or `s` key until metadata sources exist (ADR-6). Switching libraries, if built, is a first-class feature with its own flow (FLOWS *Not yet*).
 **Alternatives considered:** Switch-and-save in Settings with an override warning (the ADR-6 design); switch with an "also make default" checkbox.
 **Consequences:** Supersedes ADR-6's library-location part. `screens/settings.py` isn't built yet. The origin comes from `locate_library()` [bookman 1.2.0 @ e080149], so the header shows it from the start.
+
+### ADR-9: The TUI's own prefs file; the book list is arranged rows
+**Date:** 2026-10-03
+**Context:** BROWSE-10 remembers the sort and grouping between sessions. ADR-6 keeps bookman's config to what bookman owns, and ADR-7 planned a separate store for the TUI's display preferences. BROWSE-9 needs group header rows in a `DataTable`, which has no spanning cells, and with Format grouping one book is listed twice.
+**Decision:**
+- **Prefs:** `src/bookman_tui/prefs.py` reads and writes `prefs.json` in a `bookman-tui` folder beside bookman's config folder (`config_path().parent.parent / "bookman-tui"` [bookman 1.2.0 @ e080149]); `$BOOKMAN_TUI_PREFS` names the file directly and is set by the tests and the `make try-*` sandboxes. The sort and grouping are app reactives, loaded at start and saved on every change. A missing or bad file, or a value this version doesn't know, falls back to the default for that field silently; a failed write is logged and the choice still holds for the session.
+- **Rows:** `store.arrange(books, sort, grouping)` is pure and returns `GroupHeader` and `BookRow` items; the caller passes the books the search left, so search applies within groups. `BookTable.show()` draws those rows, keyed by `BookRow.key` (`group/id` when grouped, so a twice-listed book has unique keys). Header skipping lives in one `RowHighlighted` handler that reads the current cursor row, not the event's, so a stale event queued by a refill can't move the cursor.
+**Alternatives considered:** Storing prefs in bookman's `config.json` (bookman's file, ruled out by ADR-6); `platformdirs` for the location (only a transitive dependency of Textual); an error screen for a bad prefs file (too heavy for display settings); grouping inside `BookTable` (couples list logic to the widget, testable only through Pilot); overriding each cursor action to skip headers (keys, mouse and refills all move the cursor differently).
+**Consequences:** The theme joins the same file later (ADR-7). Moving the cursor from a header is a second highlight event, invisible to the user. In row mode `DataTable` moves to top and bottom with `ctrl+home`/`ctrl+end`; plain `home`/`end` only scroll sideways (Textual 8.2.8).
 
 
 ## Detail

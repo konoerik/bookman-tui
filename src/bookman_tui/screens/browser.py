@@ -1,4 +1,5 @@
-"""Home: the library browser (BROWSE/FIND): table, detail pane, counts, search."""
+"""Home: the library browser (BROWSE/FIND): table, detail pane, counts,
+search, sort and grouping."""
 
 from __future__ import annotations
 
@@ -13,7 +14,7 @@ from textual.screen import Screen
 from textual.widgets import DataTable, Footer, Header, Input, Static
 
 from bookman_tui.screens.details import DetailsScreen
-from bookman_tui.store import Catalog, match_summary
+from bookman_tui.store import Catalog, Grouping, Sort, arrange, match_summary
 from bookman_tui.widgets.book_detail import BookDetail
 from bookman_tui.widgets.book_table import BookTable
 
@@ -21,15 +22,28 @@ NARROW = 100
 """Below this many columns the detail pane is hidden (BROWSE-7)."""
 
 
-def status_text(catalog: Catalog, listed: int | None = None) -> str:
-    """The status line: book count and review queue size (BROWSE-4).
+def status_text(
+    catalog: Catalog,
+    listed: int | None = None,
+    sort: Sort = Sort.TITLE,
+    grouping: Grouping = Grouping.NONE,
+) -> str:
+    """The status line: book count, review queue size (BROWSE-4), and the
+    sort and grouping in use (BROWSE-8).
 
     `listed` is how many books a search left in the list, if one is active:
-    "12 of 340 books · …".
+    "12 of 340 books · …". The sort and grouping are left out for an empty
+    library, which has nothing to order: "340 books · 12 need review · by
+    author · grouped by status".
     """
     noun = "book" if len(catalog) == 1 else "books"
     shown = f"{listed} of " if listed is not None else ""
-    return f"{shown}{len(catalog)} {noun} · {catalog.review_count} need review"
+    parts = [f"{shown}{len(catalog)} {noun}", f"{catalog.review_count} need review"]
+    if catalog:
+        parts.append(f"by {sort.value}")
+        if grouping is not Grouping.NONE:
+            parts.append(f"grouped by {grouping.value}")
+    return " · ".join(parts)
 
 
 class BrowserScreen(Screen):
@@ -44,6 +58,8 @@ class BrowserScreen(Screen):
         Binding("escape", "clear_search", "Clear search", show=False),
         Binding("ctrl+r", "app.reload", "Reload"),
         Binding("enter", "details", "Details"),
+        Binding("o", "sort", "Sort"),
+        Binding("g", "group", "Group"),
     ]
 
     selected_id: reactive[str | None] = reactive(None)
@@ -68,6 +84,8 @@ class BrowserScreen(Screen):
         self.query_one(BookDetail).border_title = "Details"
         self.watch(self.app, "catalog", self.show_catalog)
         self.watch(self.app, "search", self.show_search, init=False)
+        self.watch(self.app, "sort", self.show_arrangement, init=False)
+        self.watch(self.app, "grouping", self.show_arrangement, init=False)
 
     def show_catalog(self, catalog: Catalog | None) -> None:
         """The books changed (load, reload or a write): a book that no longer
@@ -80,6 +98,10 @@ class BrowserScreen(Screen):
         catalog = self.app.catalog
         keep = catalog is not None and any(book.id == self.selected_id for book in catalog.search(query))
         self._show_books(self.selected_id if keep else None)
+
+    def show_arrangement(self) -> None:
+        """The sort or grouping changed: same books, same selection (G-3)."""
+        self._show_books(self.selected_id)
 
     def _show_books(self, selected_id: str | None) -> None:
         catalog: Catalog | None = self.app.catalog
@@ -95,14 +117,17 @@ class BrowserScreen(Screen):
             message.update("No books yet — press [bold]i[/] to import")
         elif not books:
             message.update(f'No books match "{escape(query)}"')  # FIND-5
-        status.update(status_text(catalog, len(books) if searching else None) if catalog is not None else "")
+        if catalog is not None:
+            status.update(status_text(catalog, len(books) if searching else None, self.app.sort, self.app.grouping))
+        else:
+            status.update("")
         self.query_one("#search-counts", Static).update(match_summary(books, query) if searching else "")
         table.display = bool(books)
         message.display = not books
         self.set_class(not catalog, "empty")
         self._show_search_box()
         if books:
-            table.show(books, selected_id)
+            table.show(arrange(books, self.app.sort, self.app.grouping), selected_id)
             if not self.query_one("#search", Input).has_focus:
                 table.focus()
         else:
@@ -119,6 +144,14 @@ class BrowserScreen(Screen):
     def action_search(self) -> None:
         self.query_one("#search-bar").display = True
         self.query_one("#search", Input).focus()
+
+    def action_sort(self) -> None:
+        """`o` moves to the next sort (BROWSE-8)."""
+        self.app.sort = self.app.sort.next()
+
+    def action_group(self) -> None:
+        """`g` moves to the next grouping (BROWSE-9)."""
+        self.app.grouping = self.app.grouping.next()
 
     def action_clear_search(self) -> None:
         """`Esc` clears the search from the box or the list (FIND-2, G-5)."""
@@ -155,7 +188,7 @@ class BrowserScreen(Screen):
         if action == "details":
             # Offered only while the pane is hidden (BROWSE-7).
             return self.has_class("narrow") and self.query_one(BookDetail).book is not None
-        if action == "search":
+        if action in ("search", "sort", "group"):
             return bool(self.app.catalog)
         if action == "clear_search":
             return bool(self.app.search) or self.query_one("#search", Input).has_focus

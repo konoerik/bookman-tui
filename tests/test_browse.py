@@ -41,7 +41,7 @@ async def test_browse_4_status_line_counts_the_mock_library(mock_root: Path) -> 
     async with app.run_test() as pilot:
         await app.workers.wait_for_complete()
         await pilot.pause()
-        assert str(app.screen.query_one("#status", Static).render()) == "31 books · 6 need review"
+        assert str(app.screen.query_one("#status", Static).render()) == "31 books · 6 need review · by title"
 
 
 async def test_browse_5_reload_confirms_with_a_notification(mock_root: Path, monkeypatch) -> None:

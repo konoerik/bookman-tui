@@ -7,7 +7,12 @@ from pathlib import Path
 
 
 from bookman_tui.app import BookmanApp
+from bookman_tui.store import BookRow
 from bookman_tui.widgets.book_table import AUTHOR_MAX, BookTable
+
+
+def rows(books) -> list[BookRow]:
+    return [BookRow(book) for book in books]
 
 
 async def open_mock(mock_root: Path, size=(120, 30)):
@@ -86,7 +91,7 @@ async def test_g_3_show_keeps_selection_by_id(mock_root: Path) -> None:
         book = app.catalog.get(chosen)
         # The title moves the book to the top of the list; the cursor follows it.
         app.catalog.replace(dataclasses.replace(book, title="Aardvark Days"))
-        table.show(app.catalog.ordered(), chosen)
+        table.show(rows(app.catalog.ordered()), chosen)
         await pilot.pause()
         assert table.cursor_row == 0 and table.selected_id == chosen
 
@@ -99,7 +104,7 @@ async def test_browse_5_selection_moves_to_nearest_when_book_is_gone(mock_root: 
         gone = table.selected_id
         assert app.catalog is not None
         remaining = [b for b in app.catalog.ordered() if b.id != gone]
-        table.show(remaining, gone)
+        table.show(rows(remaining), gone)
         await pilot.pause()
         assert table.cursor_row == 3
         assert table.selected_id == remaining[3].id
@@ -113,7 +118,7 @@ async def test_browse_5_selection_clamps_when_list_shrinks(mock_root: Path) -> N
         await pilot.pause()
         gone = table.selected_id
         assert app.catalog is not None
-        table.show(app.catalog.ordered()[:5], gone)
+        table.show(rows(app.catalog.ordered()[:5]), gone)
         await pilot.pause()
         assert table.cursor_row == 4
 

@@ -7,9 +7,6 @@
 Skeleton first, in small milestones; each ends with a visual review by the
 user before the next starts.
 
-- **M5 Cover** — `textual-image` (ADR-5). 28×21 slot chosen; generated no-cover placeholder. *Done; reviewed in Ghostty (graphics protocol works). Panel borders made static (accent 65%), one shared background*
-- **M6 Search** — FIND-1, 2, 5, 6, 7 (the review filter is split out, see M8). *Done; reviewed*
-- **M7 Sort, group, prefs** — BROWSE-8/9/10
 - **M8 Filters** — design first, then build: the needs-review view (was
   FIND-3/4) and how it relates to search and to grouping by Status; IMPORT-10's
   `r` and REVIEW-2 depend on it; key not chosen (`n` may be kept for "next").
@@ -26,6 +23,8 @@ user before the next starts.
 ## Backlog
 <!-- Accepted but not yet active. Load this section only when planning or prioritizing. -->
 
+- **Key bindings review** (low) — from the M7 review: in the book list `DataTable` jumps to top/bottom only with `ctrl+home`/`ctrl+end`, while plain `home`/`end` scroll sideways (Textual 8.2.8). Fine for now; revisit with the other browser keys (e.g. bind `home`/`end`, or `G`-style jumps without chords per ADR-7)
+
 
 ## Done
 <!-- Completed items land here temporarily.
@@ -40,3 +39,6 @@ user before the next starts.
   (approved 2026-09-27; skip encrypted PDFs if awkward), store (stub first), table (BROWSE-1/2/5), footer counts.
   *Done, reviewed 2026-10-01 (reload toast added from review)*
 - **M4 Detail pane, text** — BROWSE-3 without the cover, narrow layout (BROWSE-7). *Done, reviewed 2026-10-01; bordered panels added from review*
+- **M5 Cover** — `textual-image` (ADR-5). 28×21 slot chosen; generated no-cover placeholder. *Done, reviewed 2026-10-03 in Ghostty (graphics protocol works). Panel borders made static (accent 65%), one shared background*
+- **M6 Search** — FIND-1, 2, 5, 6, 7 (the review filter is split out, see M8). *Done, reviewed 2026-10-03; match counts (FIND-7) added from review*
+- **M7 Sort, group, prefs** — BROWSE-8/9/10. *Done, reviewed 2026-10-03.* `o` toggles Title/Author until bookman has `Book.added`; prefs file per ADR-9. Hiding the author column when grouped by author was considered and declined

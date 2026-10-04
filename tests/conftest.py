@@ -14,9 +14,11 @@ import mock_library
 @pytest.fixture(autouse=True)
 def isolated_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Point bookman at a config file in `tmp_path` that doesn't exist yet,
-    and clear `$BOOKMAN_LIBRARY`, so no test sees the user's real library."""
+    and the TUI's prefs likewise, and clear `$BOOKMAN_LIBRARY`, so no test
+    sees the user's real library or settings."""
     config = tmp_path / "config" / "config.json"
     monkeypatch.setenv("BOOKMAN_CONFIG", str(config))
+    monkeypatch.setenv("BOOKMAN_TUI_PREFS", str(tmp_path / "prefs" / "prefs.json"))
     monkeypatch.delenv("BOOKMAN_LIBRARY", raising=False)
     return config
 

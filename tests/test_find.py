@@ -10,8 +10,12 @@ from bookman import Book, Library, NullSource
 from textual.widgets import Input, Static
 
 from bookman_tui.app import BookmanApp
-from bookman_tui.store import Catalog, match_summary, matched_fields, matches
+from bookman_tui.store import BookRow, Catalog, match_summary, matched_fields, matches
 from bookman_tui.widgets.book_table import BookTable
+
+
+def rows(books) -> list[BookRow]:
+    return [BookRow(book) for book in books]
 
 
 @pytest.fixture
@@ -101,7 +105,7 @@ async def test_find_1_typing_narrows_the_list_and_counts_it(mock_root: Path) -> 
         await search_for(pilot, "dune")
         assert bar.display and box.has_focus
         assert listed(table) == ["Children of Dune", "Dune", "Dune Messiah"]
-        assert str(app.screen.query_one("#status", Static).render()) == "3 of 31 books · 6 need review"
+        assert str(app.screen.query_one("#status", Static).render()) == "3 of 31 books · 6 need review · by title"
 
 
 async def test_find_1_enter_returns_to_the_list_and_the_box_stays(mock_root: Path) -> None:
@@ -141,7 +145,7 @@ async def test_find_2_escape_clears_the_search(mock_root: Path, from_list: bool)
         assert not app.screen.query_one("#search-bar").display
         assert table.has_focus
         assert len(listed(table)) == 31
-        assert str(app.screen.query_one("#status", Static).render()) == "31 books · 6 need review"
+        assert str(app.screen.query_one("#status", Static).render()) == "31 books · 6 need review · by title"
 
 
 async def test_find_5_no_match_names_the_search(mock_root: Path) -> None:
@@ -152,7 +156,7 @@ async def test_find_5_no_match_names_the_search(mock_root: Path) -> None:
         message = app.screen.query_one("#books-message", Static)
         assert not table.display and message.display
         assert str(message.render()) == 'No books match "zzz[x]"'
-        assert str(app.screen.query_one("#status", Static).render()) == "0 of 31 books · 6 need review"
+        assert str(app.screen.query_one("#status", Static).render()) == "0 of 31 books · 6 need review · by title"
 
 
 async def test_find_6_selection_stays_if_it_matches_else_first_match(mock_root: Path) -> None:
@@ -160,7 +164,7 @@ async def test_find_6_selection_stays_if_it_matches_else_first_match(mock_root: 
     async with app.run_test(size=(120, 30)) as pilot:
         table = await loaded(app, pilot)
         dune = next(book for book in app.catalog if book.title == "Dune Messiah")
-        table.show(app.catalog.ordered(), dune.id)
+        table.show(rows(app.catalog.ordered()), dune.id)
         await pilot.pause()
         await search_for(pilot, "dune")
         assert selected_title(app) == "Dune Messiah"
@@ -175,7 +179,7 @@ async def test_find_6_clearing_returns_to_the_book_selected_before(mock_root: Pa
     async with app.run_test(size=(120, 30)) as pilot:
         table = await loaded(app, pilot)
         hobbit = next(book for book in app.catalog if book.title == "The Hobbit")
-        table.show(app.catalog.ordered(), hobbit.id)
+        table.show(rows(app.catalog.ordered()), hobbit.id)
         await pilot.pause()
         await search_for(pilot, "hobbitzz")  # matches until "z", then nothing
         await pilot.press("escape")
