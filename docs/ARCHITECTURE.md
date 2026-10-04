@@ -2,14 +2,14 @@
 
 ## Quick Reference
 **Stack:** Python 3.10+, Textual, bookman (editable path dependency, `../bookman`)
-**bookman baseline:** 1.2.0 @ `e080149` — bookman API claims below were checked against this; see CLAUDE.md for re-checking
+**bookman baseline:** 1.3.0 @ `1bdad64` — bookman API claims below were checked against this; see CLAUDE.md for re-checking
 **Entry point:** `src/bookman_tui/app.py` (`BookmanApp`); console script `bookman-tui` → `bookman_tui:main`
 **Key paths:** `src/bookman_tui/screens/`, `src/bookman_tui/widgets/`, `src/bookman_tui/app.tcss`; `tools/mock_library.py` (dev only: builds a mock library through bookman's public API with a scripted `MetadataSource`, used by `make try-mock` and the test fixtures)
 **Key constraints:**
 - bookman through its public API only (`bookman.__all__`); never the `bookman` CLI (ADR-1)
 - Nothing that blocks runs on the event loop: imports, re-identify and any other network call go to thread workers (ADR-4)
-- One write operation at a time per library; bookman has no lock [bookman 1.2.0 @ e080149] (ADR-4)
-- The library is opened only through `configured_library` [bookman 1.2.0 @ e080149], never `Library(root)`, which creates and marks any folder it is given
+- One write operation at a time per library; bookman has no lock [bookman 1.3.0 @ 1bdad64] (ADR-4)
+- The library is opened only through `configured_library` [bookman 1.3.0 @ 1bdad64], never `Library(root)`, which creates and marks any folder it is given
 - The TUI keeps no settings bookman owns and never switches the library; sources config waits on bookman (ADR-6, ADR-8); its own display prefs live in a separate file (ADR-9)
 - User-facing behaviour is specified in `docs/FLOWS.md`; interaction conventions in ADR-7
 **Patterns:** Reactive state, message passing, screen composition
@@ -34,7 +34,7 @@
 
 ### ADR-3: In-memory catalog from `scan()`, filtered client-side, keyed by `Book.id`
 **Date:** 2026-09-26
-**Context:** Expected size is hundreds of books, low thousands at most. `Library.search()` goes to SQLite and re-reads each match's `metadata.json`, which is too slow to run on every keystroke [bookman 1.2.0 @ e080149].
+**Context:** Expected size is hundreds of books, low thousands at most. `Library.search()` goes to SQLite and re-reads each match's `metadata.json`, which is too slow to run on every keystroke [bookman 1.3.0 @ 1bdad64].
 **Decision:** Load everything with `Library.scan()` at startup and after writes, hold the books in an app-level store keyed by `Book.id`, and do search-as-you-type as an in-memory substring filter over title and author. Keep selection and all book references by `id`, never by `directory`, which changes when a title edit renames the folder.
 **Alternatives considered:** `Library.search()` per keystroke (disk-bound, and its results would need merging with the loaded state); lazy paging (not needed at this size).
 **Consequences:** Edits done outside the TUI (the CLI, hand-edited `metadata.json`) show up only on a rescan, so there should be a manual refresh key. Revisit if libraries grow well past a few thousand.
@@ -42,7 +42,7 @@
 
 ### ADR-4: Blocking bookman calls run in thread workers under a single-writer guard
 **Date:** 2026-09-26
-**Context:** `import_file`, `iter_import` and `reidentify` do network lookups and file I/O that block. bookman assumes one writer per library and holds no lock [bookman 1.2.0 @ e080149].
+**Context:** `import_file`, `iter_import` and `reidentify` do network lookups and file I/O that block. bookman assumes one writer per library and holds no lock [bookman 1.3.0 @ 1bdad64].
 **Decision:** Run these in `@work(thread=True, exclusive=True)` workers and send results back with `post_message` or `call_from_thread`. The App holds a single "write in progress" state. While it's set, write actions (import, edit, mark reviewed, re-identify) are disabled and the UI says why. Imports consume `iter_import` so each file's start and result drive the progress display, and the summary is rebuilt with `ImportBatchResult.record`.
 **Alternatives considered:** Async wrappers (bookman is sync, so a thread would be needed anyway); `import_directory` (no progress until the whole batch is done).
 **Consequences:** Every write path goes through the guard. Cancelling an import stops pulling events; files already imported stay imported, as bookman documents.
@@ -57,7 +57,7 @@
 ### ADR-6: Settings owns only what bookman persists; sources config waits on bookman
 **Date:** 2026-09-26
 **Status:** Library-location part superseded by ADR-8; the sources part stands.
-**Amendment (2026-09-27):** bookman 1.2.0 answered the request with `Config.offline` and `configured_library()`, which builds the `Library` with the source the config chooses (bookman ADR-38), and deferred the source registry until it has a second source [bookman 1.2.0 @ e080149]. The TUI therefore never picks a source itself; the only source setting today is online/offline, and whether the TUI exposes it is an open question in FLOWS.md.
+**Amendment (2026-09-27):** bookman 1.2.0 answered the request with `Config.offline` and `configured_library()`, which builds the `Library` with the source the config chooses (bookman ADR-38), and deferred the source registry until it has a second source [bookman 1.3.0 @ 1bdad64]. The TUI therefore never picks a source itself; the only source setting today is online/offline, and whether the TUI exposes it is an open question in FLOWS.md.
 **Context:** More metadata sources may be added beyond Open Library, and the TUI should be able to configure them. Today bookman's `Config` stores only the library path, and a source is chosen solely by passing one `MetadataSource` to `Library(...)` [bookman 1.1.0 @ fe2c525].
 **Decision:** The Settings screen ships with the library location (shown with where it came from via `resolve_library`, changed with `save_config`) and any TUI-only display preferences. A Sources section is added once bookman exposes a way to list and configure sources. The request was filed as "configurable metadata sources" in bookman's inbox on 2026-09-26.
 **Alternatives considered:** A TUI-side sources config (the CLI and TUI would build differently configured libraries, which defeats bookman's single shared config).
@@ -82,13 +82,13 @@
 **Context:** ADR-6 put "change library" on the Settings screen. Reviewing SETTINGS showed it mixes two intents ("look at another library" vs "change my default for bookman too"), and one read-only line doesn't justify a screen.
 **Decision:** The open library comes only from `--library`, `$BOOKMAN_LIBRARY` or bookman's config (START-1), plus first-run Setup. The header shows its path and origin on every screen (SETTINGS-1). There is no Settings screen or `s` key until metadata sources exist (ADR-6). Switching libraries, if built, is a first-class feature with its own flow (FLOWS *Not yet*).
 **Alternatives considered:** Switch-and-save in Settings with an override warning (the ADR-6 design); switch with an "also make default" checkbox.
-**Consequences:** Supersedes ADR-6's library-location part. `screens/settings.py` isn't built yet. The origin comes from `locate_library()` [bookman 1.2.0 @ e080149], so the header shows it from the start.
+**Consequences:** Supersedes ADR-6's library-location part. `screens/settings.py` isn't built yet. The origin comes from `locate_library()` [bookman 1.3.0 @ 1bdad64], so the header shows it from the start.
 
 ### ADR-9: The TUI's own prefs file; the book list is arranged rows
 **Date:** 2026-10-03
 **Context:** BROWSE-10 remembers the sort and grouping between sessions. ADR-6 keeps bookman's config to what bookman owns, and ADR-7 planned a separate store for the TUI's display preferences. BROWSE-9 needs group header rows in a `DataTable`, which has no spanning cells, and with Format grouping one book is listed twice.
 **Decision:**
-- **Prefs:** `src/bookman_tui/prefs.py` reads and writes `prefs.json` in a `bookman-tui` folder beside bookman's config folder (`config_path().parent.parent / "bookman-tui"` [bookman 1.2.0 @ e080149]); `$BOOKMAN_TUI_PREFS` names the file directly and is set by the tests and the `make try-*` sandboxes. The sort and grouping are app reactives, loaded at start and saved on every change. A missing or bad file, or a value this version doesn't know, falls back to the default for that field silently; a failed write is logged and the choice still holds for the session.
+- **Prefs:** `src/bookman_tui/prefs.py` reads and writes `prefs.json` in a `bookman-tui` folder beside bookman's config folder (`config_path().parent.parent / "bookman-tui"` [bookman 1.3.0 @ 1bdad64]); `$BOOKMAN_TUI_PREFS` names the file directly and is set by the tests and the `make try-*` sandboxes. The sort and grouping are app reactives, loaded at start and saved on every change. A missing or bad file, or a value this version doesn't know, falls back to the default for that field silently; a failed write is logged and the choice still holds for the session.
 - **Rows:** `store.arrange(books, sort, grouping)` is pure and returns `GroupHeader` and `BookRow` items; the caller passes the books the search left, so search applies within groups. `BookTable.show()` draws those rows, keyed by `BookRow.key` (`group/id` when grouped, so a twice-listed book has unique keys). Header skipping lives in one `RowHighlighted` handler that reads the current cursor row, not the event's, so a stale event queued by a refill can't move the cursor.
 **Alternatives considered:** Storing prefs in bookman's `config.json` (bookman's file, ruled out by ADR-6); `platformdirs` for the location (only a transitive dependency of Textual); an error screen for a bad prefs file (too heavy for display settings); grouping inside `BookTable` (couples list logic to the widget, testable only through Pilot); overriding each cursor action to skip headers (keys, mouse and refills all move the cursor differently).
 **Consequences:** The theme joins the same file later (ADR-7). Moving the cursor from a header is a second highlight event, invisible to the user. In row mode `DataTable` moves to top and bottom with `ctrl+home`/`ctrl+end`; plain `home`/`end` only scroll sideways (Textual 8.2.8).

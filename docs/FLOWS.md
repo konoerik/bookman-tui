@@ -19,8 +19,8 @@ Architecture context: `docs/ARCHITECTURE.md` (ADR numbers cited below).
 Library behaviour quoted here belongs to bookman, which is authoritative for
 it; this file only states what the user sees.
 
-**bookman baseline:** 1.2.0 @ `e080149`. Claims about bookman's behaviour or
-limits carry a `[bookman 1.2.0 @ e080149]` tag; re-check them when the baseline moves
+**bookman baseline:** 1.3.0 @ `1bdad64`. Claims about bookman's behaviour or
+limits carry a `[bookman 1.3.0 @ 1bdad64]` tag; re-check them when the baseline moves
 (see CLAUDE.md).
 
 ---
@@ -55,20 +55,20 @@ where it should go.
 - **START-1** The library is chosen in this order: `--library DIR`, then
   `$BOOKMAN_LIBRARY`, then the saved bookman config. This is bookman's own
   precedence; the TUI opens the library only through `configured_library`
-  and adds nothing to it [bookman 1.2.0 @ e080149].
+  and adds nothing to it [bookman 1.3.0 @ 1bdad64].
 - **START-2** If a library is found, the browser opens with every book loaded.
 - **START-3** If no library is configured, the Setup flow runs instead.
 - **START-4** If the saved config file exists but is invalid, show the error
   and the file's path, then offer Setup (which replaces the file) or quit.
   This applies even with `--library` or `$BOOKMAN_LIBRARY`: bookman reads the
   config for the metadata source whichever way the library was named
-  [bookman 1.2.0 @ e080149].
+  [bookman 1.3.0 @ 1bdad64].
 - **START-5** If the chosen library can't be opened, say why with the path
   and where it was named (SETTINGS-1), and offer retry (`r`), choose another
   folder (Setup, `s`), or quit (`q`). The reasons: the folder doesn't exist
   (e.g. a drive that isn't connected), the path is a file, or the folder
   holds other files and is not a library. A missing library is never
-  silently recreated empty [bookman 1.2.0 @ e080149].
+  silently recreated empty [bookman 1.3.0 @ 1bdad64].
 
 ## SETUP — Choosing a library (first run)
 
@@ -94,7 +94,7 @@ the name first.
   (e.g. offline), and the browser opens on it (empty: BROWSE-6). If opening
   fails, nothing is saved (SETUP-4). The exception is a config file that
   can't be read (START-4): it is replaced first, since bookman reads it to
-  open any library [bookman 1.2.0 @ e080149].
+  open any library [bookman 1.3.0 @ 1bdad64].
 - **SETUP-4** If the path names an existing file rather than a folder, or
   can't be created, the error shows inline and nothing is saved.
 - **SETUP-5** An existing bookman library is recognised as the path is
@@ -103,7 +103,7 @@ the name first.
   files aside) is refused inline: "A library needs an empty folder: bookman
   fills it with its own copies of your books. Choose a new or empty folder,
   then import from this one." Nothing is saved. An empty folder is used as
-  is [bookman 1.2.0 @ e080149]. Pointing a library at an already organised
+  is [bookman 1.3.0 @ 1bdad64]. Pointing a library at an already organised
   collection is in *Not yet*.
 - **SETUP-6** When Setup was reached because `--library` or
   `$BOOKMAN_LIBRARY` named a library that couldn't be opened (START-5), the
@@ -166,9 +166,10 @@ it: cover, author, ISBN, formats, and how sure bookman is about the match.
   review · by author · grouped by status` (the grouping part only when
   grouped). Author sorts by the author as stored (first name first) until
   bookman offers a surname sort key, books with no author last, ties in
-  title order. Recently added waits on an import date from bookman (see
-  *Open questions*); until then it is left out and `o` toggles Title and
-  Author.
+  title order. Recently added is newest first by import date
+  (`Book.added`); books imported before bookman recorded it have none and
+  come last, in title order [bookman 1.3.0 @ 1bdad64]. Not built yet: `o` toggles Title and
+  Author until it is.
 - **BROWSE-9** `g` cycles the grouping: none → Author → Status (needs review,
   matched online, checked by you) → Format. Each group has a header row with
   its size (`── Frank Herbert (3) ──`); the selection skips header rows.
@@ -239,7 +240,8 @@ everything new; `Enter` on the summary. One book from a folder of many: add
   folders.
 - **IMPORT-2** A path that doesn't exist, or an unsupported single file, is an
   inline error. Nothing starts. A single supported file skips the preview
-  (IMPORT-3) and starts at once.
+  (IMPORT-3) and starts at once, unless the library already holds it: then
+  the error line names the book that has it, and nothing starts.
 - **IMPORT-3** A folder opens a preview before anything is imported:
   - a header with the counts: files found, new, already in the library,
     unsupported
@@ -253,9 +255,10 @@ everything new; `Enter` on the summary. One book from a folder of many: add
   - `Enter` imports the ticked files ("Enter import 180"); nothing ticked,
     nothing starts. `Esc` goes back to the path.
 
-  The *already in library* mark needs bookman to recognise a file by its
-  content (see *Open questions*); until then every supported file shows as
-  *new*.
+  *Already in library* comes from bookman's content check
+  (`Library.find_files`: offline, each file read once to hash it). A file
+  bookman placed before it recorded hashes isn't recognised until it's
+  imported again [bookman 1.3.0 @ 1bdad64].
 - **IMPORT-4** While running, the import screen shows:
   - a progress bar with files done out of total and the time left,
     estimated from the pace so far
@@ -272,10 +275,10 @@ everything new; `Enter` on the summary. One book from a folder of many: add
 - **IMPORT-7** One bad file never stops the batch; it's counted and listed.
 - **IMPORT-8** If Open Library can't be reached, a notification says books
   are being added from their files only, and the import carries on. Those
-  books are remembered for this session (IMPORT-10). Needs bookman to report
-  the failure (see *Open questions*).
+  books are remembered for this session (IMPORT-10). bookman records the
+  failure on the book (`Book.lookup` is `FAILED`) [bookman 1.3.0 @ 1bdad64].
 - **IMPORT-9** A conflict means the book already has a *different* file of the
-  same kind. Nothing was changed [bookman 1.2.0 @ e080149]. Each conflict
+  same kind. Nothing was changed [bookman 1.3.0 @ 1bdad64]. Each conflict
   shows the refused file, the book it matched and that book's existing file,
   and how they were matched, with what to do:
   - "same ISBN": likely the same book in a different copy. "To use the new
@@ -375,7 +378,7 @@ library is open.
 
 - **SETTINGS-1** The header shows the open library's path on every screen
   (`~` for the home folder), and where that choice came from: `--library`,
-  `$BOOKMAN_LIBRARY`, or `config` (`locate_library`) [bookman 1.2.0 @ e080149].
+  `$BOOKMAN_LIBRARY`, or `config` (`locate_library`) [bookman 1.3.0 @ 1bdad64].
   Nothing in the TUI switches or changes the library.
 - **SETTINGS-2** A settings screen (`s`) arrives with metadata sources, once
   bookman supports configuring them (ADR-6).
@@ -389,12 +392,12 @@ otherwise. Each needs a flow here before it's built.
 
 - Resolving a format conflict in the TUI (keep or replace a file, or split a
   wrongly grouped book). bookman has no API for either; merge and split are
-  planned there [bookman 1.2.0 @ e080149].
-- Deleting a book: no bookman API [bookman 1.2.0 @ e080149] (also what `ReadIssue.NEEDS_CRYPTO` advises before a
+  planned there [bookman 1.3.0 @ 1bdad64].
+- Deleting a book: no bookman API [bookman 1.3.0 @ 1bdad64] (also what `ReadIssue.NEEDS_CRYPTO` advises before a
   re-import).
 - Choosing and configuring metadata sources: bookman deferred a source
   registry until it has a second source; today the one choice is online or
-  offline (`Config.offline`) [bookman 1.2.0 @ e080149] (ADR-6). Whether and
+  offline (`Config.offline`) [bookman 1.3.0 @ 1bdad64] (ADR-6). Whether and
   where the TUI exposes the offline switch is undecided (*Open questions*).
 - Opening the book in the system's default reader (`Enter`, with a format
   choice when there are several). Chosen against for now in favour of
@@ -420,7 +423,7 @@ otherwise. Each needs a flow here before it's built.
   hand-sorted folder, a Calibre library), where the user wants that folder
   to become the library rather than be copied into a subfolder of it. A
   library can be moved freely: book files are found relative to their folder
-  and the index stores folder names only [bookman 1.2.0 @ e080149].
+  and the index stores folder names only [bookman 1.3.0 @ 1bdad64].
 - Filters (was FIND-3/4, then M8): a toggle showing only some books, e.g.
   those that need review or this import's books (which IMPORT-10's `r`
   needed). Dropped on 2026-10-03: grouping by Status (BROWSE-9) already
@@ -439,33 +442,16 @@ otherwise. Each needs a flow here before it's built.
   To decide:
   - unreadable files (`ReadIssue`): bookman names the book after its file
     and advises deleting the folder and importing again
-    [bookman 1.2.0 @ e080149]; is editing in place enough?
+    [bookman 1.3.0 @ 1bdad64]; is editing in place enough?
   - after an edit adds an ISBN or fixes the title, does a lookup run on its
     own, or does the dialog offer one, and does the path fit a key budget?
   - REVIEW-2's replacement: with Status grouping, `v` moves the book to
     "Checked by you" and the selection follows it (G-3); should it stay in
     Needs review on the next book instead?
 
-- **LOOKUP-2 / IMPORT-8** can't tell "the lookup failed" (e.g. offline) from
-  "nothing matched": bookman treats a failed lookup as no record, in imports
-  and `reidentify` alike. Offline, a batch imports as "not found online" with
-  no warning. Recording the lookup outcome on `Book` is planned in bookman
-  [bookman 1.2.0 @ e080149].
-- **IMPORT-3 / IMPORT-10** "already in library" and a clean resume need
-  bookman to recognise a held file by content before looking it up; today a
-  re-imported file is looked up again and reported as imported. A content
-  check (`Library.find_file`) and an "unchanged" outcome are planned in
-  bookman [bookman 1.2.0 @ e080149].
-- **BROWSE-8** Recently added needs an import date (`Book.added`, planned;
-  books imported before it will have none) and surname order needs an author
-  sort key (in bookman's backlog) [bookman 1.2.0 @ e080149].
-- **START-5 wording** bookman's `LibraryNotFoundError` message tells the
-  user to run `bookman init`, which is the CLI's next step, not the TUI's,
-  and the reason is only in the message text [bookman 1.2.0 @ e080149].
-  Until bookman gives the reason as data (inbox request filed 2026-09-27),
-  the TUI tells the three reasons apart from the path itself and words its
-  own next step.
-- **Offline switch** bookman 1.2.0 can save an offline setting, which the
+- **BROWSE-8** Surname order needs an author sort key (in bookman's
+  backlog) [bookman 1.3.0 @ 1bdad64].
+- **Offline switch** bookman 1.3.0 can save an offline setting, which the
   `bookman` command doesn't switch either. Does the TUI get a toggle (a
   settings screen, which ADR-8 holds back), and should the header say when
   lookups are off?

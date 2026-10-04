@@ -155,9 +155,8 @@ _E = TypeVar("_E", bound=Enum)
 class Sort(str, Enum):
     """The orders `o` cycles through (BROWSE-8), in cycle order.
 
-    Recently added is left out until bookman records an import date
-    (`Book.added`, planned [bookman 1.2.0 @ e080149]); it joins the cycle
-    then, and `o` meanwhile toggles between these two.
+    Recently added (by `Book.added` [bookman 1.3.0 @ 1bdad64]) is not built yet; it joins the
+    cycle then, and `o` meanwhile toggles between these two.
     """
 
     TITLE = "title"

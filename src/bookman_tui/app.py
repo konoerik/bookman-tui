@@ -111,14 +111,13 @@ class BookmanApp(App):
             )
             return
         except LibraryNotFoundError as error:
-            location = locate_library(self.library_arg)
-            self.sub_title = header_text(location)
+            self.sub_title = header_text(error.location)
             self._show(
                 StartProblemScreen(
                     "Can't open the library",
                     display_path(error.path),
-                    sentence(location.describe()),
-                    not_found_reason(error.path),
+                    sentence(error.location.describe()),
+                    not_found_reason(error.reason),
                     can_retry=True,
                 )
             )
