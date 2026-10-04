@@ -433,7 +433,7 @@ otherwise. Each needs a flow here before it's built.
 
 ## Open questions
 
-- **Editing and lookup as one path** (M8) EDIT, LOOKUP and REVIEW work on
+- **Editing and lookup as one path** (M10) EDIT, LOOKUP and REVIEW work on
   any book, but are specified separately, not as one path: find the book,
   fill in or correct its fields, then fetch online. The scenario to design
   for is the hardest one: an imported book whose file gave little or

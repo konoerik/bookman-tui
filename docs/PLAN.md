@@ -7,16 +7,26 @@
 Skeleton first, in small milestones; each ends with a visual review by the
 user before the next starts.
 
-- **M7.5 Setup polish** — from trying first run: path pre-filled with a
-  suggested folder (`Books`, …) and the full path in the hint (SETUP-1), `Esc Esc` quits
-  or `Esc` returns to the start problem (SETUP-7)
-- **M8 Edit and lookup** — design first (FLOWS.md Open questions): edit,
+- **M8 Import** — a finished import, watched on its own screen: path
+  widget with tab completion (IMPORT-1), shared with Setup, which gets the
+  completion SETUP-1 promised; single file or folder (IMPORT-2) and the
+  folder preview with ticks, `Space`, `a`, `/` and already-in-library marks
+  from `find_files` (IMPORT-3); progress screen, `x` to stop, bad files
+  counted (IMPORT-4/6/7); conflicts and summary (IMPORT-9/10, without `l`).
+  The ticked subset goes through `import_file` in a TUI loop until bookman
+  can import a list of files (inbox 2026-10-04); a full selection uses
+  `iter_import`. Empty-library hint (BROWSE-6) finally works
+- **M9 Import in the background** — `Esc` to the browser while it runs,
+  footer progress, `i` reopens, summary opens on its own (IMPORT-5); one
+  writer per library: block `ctrl+r` and later edits while importing
+  (ADR-4); failed lookups (IMPORT-8, `Book.lookup`) and `l` on the summary
+- **M10 Edit and lookup** — design first (FLOWS.md Open questions): edit,
   look up and mark reviewed as one path for any book, judged against the
   hardest case, an imported book with little or no metadata; then build
   EDIT-1..6, LOOKUP-1..3 and REVIEW-1. Replaces M8 Filters, dropped
   2026-10-03 (Status grouping covers the review queue; ADR-2 amended)
-- **M9 Reveal and copy** — BROWSE-11..13
-- **M10 UI polish** — from the M3 review: the title column takes too much
+- **M11 Reveal and copy** — BROWSE-11..13
+- **M12 UI polish** — from the M3 review: the title column takes too much
   width next to author and formats (rebalance, e.g. cap the title or share
   spare width); the plain table look (stripes, header, colours) once the
   browser is complete; the narrow details screen (BROWSE-7) leaves the right
@@ -46,3 +56,9 @@ user before the next starts.
 - **M5 Cover** — `textual-image` (ADR-5). 28×21 slot chosen; generated no-cover placeholder. *Done, reviewed 2026-10-03 in Ghostty (graphics protocol works). Panel borders made static (accent 65%), one shared background*
 - **M6 Search** — FIND-1, 2, 5, 6, 7 (the review filter is split out, later dropped). *Done, reviewed 2026-10-03; match counts (FIND-7) added from review*
 - **M7 Sort, group, prefs** — BROWSE-8/9/10. *Done, reviewed 2026-10-03.* `o` toggles Title/Author until bookman has `Book.added`; prefs file per ADR-9. Hiding the author column when grouped by author was considered and declined
+- **M7.5 Setup polish** — path pre-filled with a suggested folder
+  (`Books`, `Ebooks`, `Library`, `MyBooks`: the first `Enter` would accept)
+  and the full path in every hint (SETUP-1); `Esc` cancels, returns to the
+  start problem, or on first run quits on a second press (SETUP-7);
+  confirmations read "Press Enter/Esc again to …". *Done, reviewed
+  2026-10-04*
