@@ -137,8 +137,8 @@ it: cover, author, ISBN, formats, and how sure bookman is about the match.
     initials don't count as different ("J. R. R." and "J.R.R."), and a book
     whose author came from the record gets no note
 - **BROWSE-4** A footer always shows the book count and the review queue
-  size: `340 books · 12 need review`. With a search or filter active it
-  shows how many are listed: `12 of 340 books · 12 need review`.
+  size: `340 books · 12 need review`. With a search active it shows how
+  many are listed: `12 of 340 books · 12 need review`.
 - **BROWSE-5** `ctrl+r` reloads the library from disk, to pick up changes made
   by the `bookman` command or by hand. The selection is kept (G-3), or moves to
   the nearest book if the selected one is gone. When the reload finishes, a
@@ -194,8 +194,9 @@ Key budget: `/`, type, `Enter` (focus goes back to the list).
   active, so the list always shows what narrowed it. `/` again edits it.
 - **FIND-2** `Esc` clears the search and shows all books again, from the
   search box or from the list (G-5). Focus goes to the list and the box hides.
-- **FIND-3** *Withdrawn: the review filter moved out of search; filtering is
-  being redesigned (see Open questions).*
+- **FIND-3** *Withdrawn: the review filter moved out of search, then was
+  dropped; the review queue is the Needs review group (BROWSE-9). Filters
+  are in Not yet.*
 - **FIND-4** *Withdrawn with FIND-3.*
 - **FIND-5** If nothing matches, the table says so and names the search:
   `No books match "dune"`.
@@ -280,8 +281,7 @@ everything new; `Enter` on the summary. One book from a folder of many: add
     reason), **Imported** (resulting book, marked when it needs review),
     **Skipped** (unsupported files, e.g. `.mobi`). Empty sections are
     omitted.
-  - `r` returns to the browser showing only this import's books that need
-    review; `l` looks up again the books imported without Open Library
+  - `l` looks up again the books imported without Open Library
     (IMPORT-8), in the background like LOOKUP-1; `Enter` returns to the
     browser with the first imported book selected. The library is reloaded
     either way.
@@ -299,7 +299,7 @@ stateDiagram-v2
     Running --> Summary: last file done
     Background --> Summary: last file done
     Running --> Summary: x — stop after current file (IMPORT-6)
-    Summary --> [*]: Enter / r / l (IMPORT-10)
+    Summary --> [*]: Enter / l (IMPORT-10)
     Path --> [*]: Esc
 ```
 
@@ -335,9 +335,9 @@ Key budget: `v`.
 
 - **REVIEW-1** `v` toggles reviewed on the selected book (`mark_reviewed`).
   Nothing else about the book changes.
-- **REVIEW-2** Once filtering exists (see Open questions): with the
-  needs-review filter on, a book marked reviewed leaves the list and the
-  next book is selected (FIND-6).
+- **REVIEW-2** *Withdrawn with the review filter. Where the selection goes
+  when `v` moves a book out of the Needs review group (BROWSE-9) is part of
+  the edit-and-lookup design (see Open questions).*
 
 ## LOOKUP — Re-identifying a book
 
@@ -396,7 +396,7 @@ otherwise. Each needs a flow here before it's built.
   `--library DIR` or `$BOOKMAN_LIBRARY`. A library can be moved freely (see
   above), so no flow is needed for that.
 - A cover grid view: a toggle that swaps the table for covers with titles
-  underneath, same search, filter and sort, for browsing by what a book looks
+  underneath, same search, sort and grouping, for browsing by what a book looks
   like. Until then, flipping through with `j`/`k` shows each cover in the
   detail pane. Deferred for speed: many images at once may be slow, and
   half-block covers are hard to recognise at thumbnail size (ADR-5); measure
@@ -411,15 +411,30 @@ otherwise. Each needs a flow here before it's built.
   to become the library rather than be copied into a subfolder of it. A
   library can be moved freely: book files are found relative to their folder
   and the index stores folder names only [bookman 1.2.0 @ e080149].
+- Filters (was FIND-3/4, then M8): a toggle showing only some books, e.g.
+  those that need review or this import's books (which IMPORT-10's `r`
+  needed). Dropped on 2026-10-03: grouping by Status (BROWSE-9) already
+  gathers the review queue with its count, and users know their own
+  library well enough to find the rest by search or grouping. Revisit if
+  more criteria come up (no cover, no ISBN) or the review queue gets large.
 
 ## Open questions
 
-- **Filtering** (was FIND-3/4) Showing only books that need review is a fixed
-  view of the library rather than a search, so it gets its own design: which
-  filters (needs review; this import's books, which IMPORT-10's `r` relies
-  on), whether they combine with search and with grouping by Status
-  (BROWSE-9), how the header shows them, and which key. `n` may be better
-  kept for "next" (e.g. the next book that needs review).
+- **Editing and lookup as one path** (M8) EDIT, LOOKUP and REVIEW work on
+  any book, but are specified separately, not as one path: find the book,
+  fill in or correct its fields, then fetch online. The scenario to design
+  for is the hardest one: an imported book whose file gave little or
+  nothing and that wasn't found online (e.g. under Unknown author or Needs
+  review); if that path is smooth, a one-field fix on a good match is too.
+  To decide:
+  - unreadable files (`ReadIssue`): bookman names the book after its file
+    and advises deleting the folder and importing again
+    [bookman 1.2.0 @ e080149]; is editing in place enough?
+  - after an edit adds an ISBN or fixes the title, does a lookup run on its
+    own, or does the dialog offer one, and does the path fit a key budget?
+  - REVIEW-2's replacement: with Status grouping, `v` moves the book to
+    "Checked by you" and the selection follows it (G-3); should it stay in
+    Needs review on the next book instead?
 
 - **LOOKUP-2 / IMPORT-8** can't tell "the lookup failed" (e.g. offline) from
   "nothing matched": bookman treats a failed lookup as no record, in imports

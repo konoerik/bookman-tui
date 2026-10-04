@@ -24,12 +24,13 @@
 **Alternatives considered:** Wrapping the CLI (fragile text parsing, loses typed errors and progress events); importing internal modules (couples the TUI to bookman internals that may change without notice).
 **Consequences:** Anything the TUI needs that bookman doesn't export is an inbox request, not a workaround. Library changes show up immediately, with no reinstall.
 
-### ADR-2: Browser-first screen map; the review queue is a filter
+### ADR-2: Browser-first screen map; the review queue is a filter (amended: a group)
 **Date:** 2026-09-26
 **Context:** Expected use is mostly browsing, occasional import bursts (e.g. a new Humble Bundle) and a few hand fixes for hard-to-identify books.
 **Decision:** The library browser is the home screen: a book table and a detail pane. "Needs review" is a filter toggle on that table, not its own screen. Import, edit and settings are pushed on top of it and return to it.
 **Alternatives considered:** Separate screens for the review queue and the library (duplicates the table and detail view, and costs a context switch for what is the same list).
 **Consequences:** The browser's table and filter logic are the core widgets; everything else is a modal or a short-lived screen.
+**Amendment (2026-10-03):** No filter. The review queue is the Needs review group of the Status grouping (BROWSE-9): it already gathers those books with their count, and a user knows their own library well enough to find the rest by search or grouping. Filters moved to FLOWS.md *Not yet*; the work they stood for is fixing a book's details in place (EDIT, LOOKUP), planned as M8 Edit and lookup.
 
 ### ADR-3: In-memory catalog from `scan()`, filtered client-side, keyed by `Book.id`
 **Date:** 2026-09-26
@@ -37,7 +38,7 @@
 **Decision:** Load everything with `Library.scan()` at startup and after writes, hold the books in an app-level store keyed by `Book.id`, and do search-as-you-type as an in-memory substring filter over title and author. Keep selection and all book references by `id`, never by `directory`, which changes when a title edit renames the folder.
 **Alternatives considered:** `Library.search()` per keystroke (disk-bound, and its results would need merging with the loaded state); lazy paging (not needed at this size).
 **Consequences:** Edits done outside the TUI (the CLI, hand-edited `metadata.json`) show up only on a rescan, so there should be a manual refresh key. Revisit if libraries grow well past a few thousand.
-**Amendment (2026-10-03):** search also matches the ISBN, ignoring hyphens and spaces (FIND-1). The review filter was split out of search and is being redesigned (FLOWS.md *Open questions*).
+**Amendment (2026-10-03):** search also matches the ISBN, ignoring hyphens and spaces (FIND-1). The review filter was split out of search, then dropped (ADR-2 amendment).
 
 ### ADR-4: Blocking bookman calls run in thread workers under a single-writer guard
 **Date:** 2026-09-26
@@ -101,7 +102,7 @@ src/bookman_tui/
 ├── __init__.py       # main(): parse args (--library), run BookmanApp
 ├── app.py            # BookmanApp: owns Library, catalog store, write guard
 ├── app.tcss          # Global styles
-├── store.py          # In-memory catalog keyed by Book.id; filtering (ADR-3)
+├── store.py          # In-memory catalog keyed by Book.id; search, sort, grouping (ADR-3, ADR-9)
 ├── screens/
 │   ├── browser.py    # Home: book table + detail pane, search
 │   ├── import_.py    # Path entry, preview, live progress (can run in background), summary
@@ -118,7 +119,7 @@ src/bookman_tui/
 ```
 
 ### State model
-- **App-level:** the `Library` instance (built by `configured_library(--library)`) and its `LibraryLocation` (`locate_library`, for the header), the catalog store (all `Book`s by `id`), the current search text (filters are being redesigned, see FLOWS.md *Open questions*), and the write-in-progress flag. Filter changes and the write flag are `reactive`; watchers push updates to the screens.
+- **App-level:** the `Library` instance (built by `configured_library(--library)`) and its `LibraryLocation` (`locate_library`, for the header), the catalog store (all `Book`s by `id`), the current search text, the sort and grouping (ADR-9), and the write-in-progress flag. These and the write flag are `reactive`; watchers push updates to the screens.
 - **Store updates:** after any write, the returned `Book` replaces the entry with the same `id` (edit, mark reviewed, re-identify, and each import result). A full `scan()` happens at startup and on manual refresh.
 - **Screens and widgets:** keep only view state (selected `id`, scroll position). They request changes by posting messages to the App and never call `Library` directly.
 - **Errors:** anything raised as `BookmanError` is shown to the user, e.g. an invalid ISBN from `edit` (`CatalogError`). At startup `LibraryNotConfiguredError` routes to the setup screen, and `ConfigError` or `LibraryNotFoundError` to the start-problem screen (START-4, START-5). Anything else is a bug and propagates.
