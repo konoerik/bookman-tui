@@ -6,12 +6,14 @@ import os
 from pathlib import Path
 
 import pytest
-from bookman import Config, is_library, load_config, save_config
+from bookman import Config, Library, NullSource, is_library, load_config, save_config
 from textual.widgets import Input, Static
 
 from bookman_tui.app import BookmanApp
+from bookman_tui.location import display_path
 from bookman_tui.screens.browser import BrowserScreen
-from bookman_tui.screens.setup import Choice, SetupScreen, assess
+from bookman_tui.screens.setup import Choice, SetupScreen, assess, starting_path
+from bookman_tui.screens.start_problem import StartProblemScreen
 
 
 async def enter_path(app: BookmanApp, pilot, text: str) -> None:
@@ -36,13 +38,56 @@ def test_setup_1_tilde_expanded_and_relative_path_made_absolute(
     assert assess("  ").choice is Choice.NOTHING
 
 
+def test_setup_1_hint_names_the_full_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    assert display_path(tmp_path / "Books") in assess("Books").message
+
+
+async def test_setup_1_prefilled_with_a_suggested_folder(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "notes.txt").write_text("")
+    monkeypatch.chdir(tmp_path)
+    app = BookmanApp()
+    async with app.run_test() as pilot:
+        field = app.screen.query_one("#setup-path", Input)
+        assert field.value == display_path(tmp_path / "Books")
+        assert field.cursor_position == len(field.value)
+        assert hint(app) == f"New folder {field.value}: Enter creates it."
+        await pilot.press("enter", "enter")
+        await app.workers.wait_for_complete()
+        await pilot.pause()
+        assert isinstance(app.screen, BrowserScreen)
+    assert is_library(tmp_path / "Books")
+
+
+def test_setup_1_suggestion_skips_names_that_would_be_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "Books").mkdir()
+    (tmp_path / "Books" / "novel.epub").write_bytes(b"")
+    (tmp_path / "Ebooks").write_text("")  # a file
+    assert starting_path() == display_path(tmp_path / "Library")
+
+
+def test_setup_1_suggestion_prefers_an_existing_library(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    Library(tmp_path / "Ebooks", source=NullSource())
+    (tmp_path / "Books").mkdir()
+    (tmp_path / "Books" / "novel.epub").write_bytes(b"")
+    assert starting_path() == display_path(tmp_path / "Ebooks")
+
+
 async def test_setup_2_missing_folder_needs_a_second_enter(tmp_path: Path, isolated_config: Path) -> None:
     target = tmp_path / "Books"
     app = BookmanApp()
     async with app.run_test() as pilot:
         await enter_path(app, pilot, str(target))
         assert isinstance(app.screen, SetupScreen)
-        assert "Create" in hint(app)
+        assert hint(app).startswith("Press Enter again to create")
         assert not target.exists() and not isolated_config.exists()
         await pilot.press("enter")
         await app.workers.wait_for_complete()
@@ -51,7 +96,7 @@ async def test_setup_2_missing_folder_needs_a_second_enter(tmp_path: Path, isola
     assert is_library(target)
 
 
-async def test_setup_2_editing_the_path_cancels_the_question(tmp_path: Path) -> None:
+async def test_setup_2_editing_the_path_cancels_the_confirmation(tmp_path: Path) -> None:
     app = BookmanApp()
     async with app.run_test() as pilot:
         await enter_path(app, pilot, str(tmp_path / "Books"))
@@ -72,6 +117,7 @@ async def test_setup_3_saves_the_library_keeping_other_settings(
         await pilot.press("s")
         await enter_path(app, pilot, str(empty_library))
         assert isinstance(app.screen, BrowserScreen)
+        assert len(app.screen_stack) == 2  # Setup and the problem are gone
         assert app.sub_title.endswith("· config")
     assert load_config() == Config(library=empty_library, offline=True)
 
@@ -150,3 +196,56 @@ async def test_start_4_setup_replaces_an_unreadable_config(tmp_path: Path, isola
         await pilot.pause()
         assert isinstance(app.screen, BrowserScreen)
     assert load_config() == Config(library=target)
+
+
+async def test_setup_7_esc_cancels_the_create_confirmation(tmp_path: Path) -> None:
+    app = BookmanApp()
+    async with app.run_test() as pilot:
+        await enter_path(app, pilot, str(tmp_path / "Books"))
+        assert hint(app).startswith("Press Enter again to create")
+        await pilot.press("escape")
+        assert hint(app).startswith("New folder")
+        await pilot.press("enter")  # asks again rather than creating
+        assert hint(app).startswith("Press Enter again to create")
+        assert not (tmp_path / "Books").exists()
+
+
+async def test_setup_7_esc_esc_quits_on_first_run(
+    isolated_config: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    app = BookmanApp()
+    exits: list[bool] = []
+    monkeypatch.setattr(app, "exit", lambda *args, **kwargs: exits.append(True))
+    async with app.run_test() as pilot:
+        await pilot.press("escape")
+        assert "Press Esc again to quit" in hint(app)
+        assert not exits
+        await pilot.press("escape")
+        assert exits
+    assert not isolated_config.exists()
+
+
+async def test_setup_7_editing_cancels_the_quit_confirmation(monkeypatch: pytest.MonkeyPatch) -> None:
+    app = BookmanApp()
+    exits: list[bool] = []
+    monkeypatch.setattr(app, "exit", lambda *args, **kwargs: exits.append(True))
+    async with app.run_test() as pilot:
+        await pilot.press("escape")
+        await pilot.press("x")
+        assert "Press Esc again to quit" not in hint(app)
+        await pilot.press("escape")
+        assert not exits
+
+
+async def test_setup_7_esc_returns_to_the_start_problem(tmp_path: Path) -> None:
+    save_config(Config(library=tmp_path / "unplugged"))
+    app = BookmanApp()
+    async with app.run_test() as pilot:
+        header = app.sub_title
+        await pilot.press("s")
+        assert isinstance(app.screen, SetupScreen)
+        await pilot.press("escape")
+        await pilot.pause()
+        assert isinstance(app.screen, StartProblemScreen)
+        assert app.sub_title == header
+    assert load_config() == Config(library=tmp_path / "unplugged")

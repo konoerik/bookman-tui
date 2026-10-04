@@ -75,16 +75,20 @@ where it should go.
 *In short:* type or tab-complete a folder. It's created if it doesn't exist,
 and remembered for both `bookman-tui` and `bookman`.
 
-Key budget: type the path, `Enter`.
+Key budget: `Enter`, `Enter` to accept the suggested folder; otherwise edit
+the name first.
 
-- **SETUP-1** A path input with tab completion (same widget as IMPORT-1). `~`
-  is expanded and a relative path is taken from the current folder. As the
-  path is typed, a line under it says what `Enter` will do (SETUP-2..5).
-  `ctrl+q` quits.
+- **SETUP-1** A path input with tab completion (same widget as IMPORT-1),
+  pre-filled with a suggested folder inside the current one (home shown as
+  `~`), cursor at the end. The suggestion is the first of `Books`, `Ebooks`,
+  `Library`, `MyBooks` that `Enter` would accept (new, empty, or an existing
+  library), else `Books`. `~` is expanded and a relative path is taken from
+  the current folder. A line under the input says what `Enter` will do and
+  names the full path (SETUP-2..5). `ctrl+q` quits.
 - **SETUP-2** If the folder doesn't exist, say it will be created before
-  continuing. One confirmation, no second dialog: the first `Enter` asks
-  ("Create `<path>`? `Enter` creates it"), the second creates it, and
-  editing the path cancels the question.
+  continuing. One confirmation, no second dialog: the first `Enter` says
+  "Press `Enter` again to create `<path>`", the second creates it, and
+  editing the path cancels the confirmation.
 - **SETUP-3** On confirm, the library is opened (created if needed), then
   its path is saved to bookman's config keeping the other saved settings
   (e.g. offline), and the browser opens on it (empty: BROWSE-6). If opening
@@ -106,6 +110,12 @@ Key budget: type the path, `Enter`.
   chosen folder is saved and opened for this session, and a notification
   says the flag or variable still takes precedence at the next launch. The
   header shows the chosen folder as coming from `config`.
+- **SETUP-7** `Esc` backs out one step at a time: it first cancels a pending
+  create confirmation (SETUP-2). When Setup was opened from a start problem
+  (START-4/5, `s`), it then returns to that screen. On first run there is
+  nothing to return to, so the hint line says "Press `Esc` again to quit",
+  and a second `Esc` quits. Editing the path or `Enter` cancels it. Nothing
+  is saved either way.
 
 ## BROWSE — The library browser (home)
 

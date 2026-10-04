@@ -58,18 +58,37 @@ def assess(text: str) -> Assessment:
     if not text:
         return Assessment(Choice.NOTHING, None, "Type the folder your library should live in.")
     path = Path(os.path.abspath(Path(text).expanduser()))
+    shown = display_path(path)
     try:
         if not path.exists():
-            return Assessment(Choice.CREATE, path, "New folder: Enter creates it.")
+            return Assessment(Choice.CREATE, path, f"New folder {shown}: Enter creates it.")
         if not path.is_dir():
-            return Assessment(Choice.REFUSE, path, "This is a file, not a folder.")
+            return Assessment(Choice.REFUSE, path, f"{shown} is a file, not a folder.")
         if is_library(path):
-            return Assessment(Choice.OPEN, path, "Existing library: Enter opens it.")
+            return Assessment(Choice.OPEN, path, f"Existing library {shown}: Enter opens it.")
         if all(entry.name.startswith(".") for entry in path.iterdir()):
-            return Assessment(Choice.ADOPT, path, "Empty folder: Enter makes it your library.")
+            return Assessment(
+                Choice.ADOPT, path, f"Empty folder {shown}: Enter makes it your library."
+            )
     except OSError as error:
-        return Assessment(Choice.REFUSE, path, f"Can't use this folder: {error.strerror or error}.")
-    return Assessment(Choice.REFUSE, path, NOT_EMPTY)
+        return Assessment(
+            Choice.REFUSE, path, f"Can't use {shown}: {error.strerror or error}."
+        )
+    return Assessment(Choice.REFUSE, path, f"{shown} has other files in it. {NOT_EMPTY}")
+
+
+SUGGESTED_NAMES = ("Books", "Ebooks", "Library", "MyBooks")
+
+
+def starting_path() -> str:
+    """The pre-fill: the first suggested folder in the current one that
+    `Enter` would accept, else the first (SETUP-1)."""
+    for name in SUGGESTED_NAMES:
+        if assess(name).choice in (Choice.CREATE, Choice.OPEN, Choice.ADOPT):
+            break
+    else:
+        name = SUGGESTED_NAMES[0]
+    return display_path(Path.cwd() / name)
 
 
 class SetupScreen(Screen):
@@ -77,6 +96,7 @@ class SetupScreen(Screen):
 
     Messages:
         LibraryChosen: The library at `path` is ready and saved to the config.
+        BackRequested: Return to the start problem that opened Setup (SETUP-7).
     """
 
     class LibraryChosen(Message):
@@ -86,26 +106,36 @@ class SetupScreen(Screen):
             super().__init__()
             self.path = path
 
-    BINDINGS = [Binding("ctrl+q", "app.quit", "Quit", priority=True)]
+    class BackRequested(Message):
+        """`Esc` with nothing left to cancel, when Setup can go back."""
+
+    BINDINGS = [
+        Binding("escape", "cancel", "Cancel"),
+        Binding("ctrl+q", "app.quit", "Quit", priority=True),
+    ]
 
     confirming: reactive[bool] = reactive(False)
-    """The first `Enter` on a missing folder asked; the next one creates it (SETUP-2)."""
+    """The first `Enter` on a missing folder warned; the next one creates it (SETUP-2)."""
+
+    quitting: reactive[bool] = reactive(False)
+    """The first `Esc` on first run warned; the next one quits (SETUP-7)."""
+
+    def __init__(self, *, can_go_back: bool = False) -> None:
+        super().__init__()
+        self.can_go_back = can_go_back
+        self.prefill = starting_path()
 
     def compose(self) -> ComposeResult:
         yield Header()
         with Vertical(id="setup"):
             yield Static("Choose a folder for your library", id="setup-heading")
-            yield Static(
-                "bookman keeps its own copies of your books there. "
-                "It's remembered for both bookman-tui and bookman.",
-                id="setup-intro",
-            )
-            yield Input(placeholder="~/Books", id="setup-path")
+            yield Static("Books are copied into this folder when you import them.", id="setup-intro")
+            yield Input(self.prefill, placeholder="~/Books", id="setup-path")
             yield Static("", id="setup-hint")
         yield Footer()
 
     def on_mount(self) -> None:
-        self.show(assess(""))
+        self.show(assess(self.prefill))
 
     def show(self, assessment: Assessment, *, error: bool | None = None) -> None:
         hint = self.query_one("#setup-hint", Static)
@@ -113,11 +143,20 @@ class SetupScreen(Screen):
         hint.set_class(assessment.choice is Choice.REFUSE if error is None else error, "error")
         hint.remove_class("confirm")
 
+    def confirm(self, prompt: str) -> None:
+        """Ask for the same key again on the hint line (SETUP-2, SETUP-7)."""
+        hint = self.query_one("#setup-hint", Static)
+        hint.update(prompt)
+        hint.remove_class("error")
+        hint.add_class("confirm")
+
     def on_input_changed(self, event: Input.Changed) -> None:
         self.confirming = False
+        self.quitting = False
         self.show(assess(event.value))
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
+        self.quitting = False
         assessment = assess(event.value)
         if assessment.choice in (Choice.NOTHING, Choice.REFUSE):
             self.show(assessment)
@@ -125,16 +164,22 @@ class SetupScreen(Screen):
         assert assessment.path is not None
         if assessment.choice is Choice.CREATE and not self.confirming:
             self.confirming = True
-            self.show(
-                Assessment(
-                    Choice.CREATE,
-                    assessment.path,
-                    f"Create {display_path(assessment.path)}? Enter creates it.",
-                )
-            )
-            self.query_one("#setup-hint").add_class("confirm")
+            self.confirm(f"Press Enter again to create {display_path(assessment.path)}.")
             return
         self.choose(assessment.path, create=assessment.choice is Choice.CREATE)
+
+    def action_cancel(self) -> None:
+        """Back out one step (SETUP-7)."""
+        if self.confirming:
+            self.confirming = False
+            self.show(assess(self.query_one("#setup-path", Input).value))
+        elif self.can_go_back:
+            self.post_message(self.BackRequested())
+        elif self.quitting:
+            self.app.exit()
+        else:
+            self.quitting = True
+            self.confirm("Press Esc again to quit.")
 
     def choose(self, path: Path, *, create: bool) -> None:
         """Open or create the library at `path`, then save it (SETUP-3)."""

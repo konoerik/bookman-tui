@@ -7,6 +7,9 @@
 Skeleton first, in small milestones; each ends with a visual review by the
 user before the next starts.
 
+- **M7.5 Setup polish** — from trying first run: path pre-filled with a
+  suggested folder (`Books`, …) and the full path in the hint (SETUP-1), `Esc Esc` quits
+  or `Esc` returns to the start problem (SETUP-7)
 - **M8 Edit and lookup** — design first (FLOWS.md Open questions): edit,
   look up and mark reviewed as one path for any book, judged against the
   hardest case, an imported book with little or no metadata; then build

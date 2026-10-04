@@ -68,6 +68,7 @@ class BookmanApp(App):
         self.library_arg = library
         self.library: Library | None = None
         self.location: LibraryLocation | None = None
+        self._problem_sub_title = ""
         prefs = load_prefs()
         self.set_reactive(BookmanApp.sort, prefs.sort)
         self.set_reactive(BookmanApp.grouping, prefs.grouping)
@@ -138,7 +139,10 @@ class BookmanApp(App):
         self._show(SetupScreen())
 
     def _show(self, screen: Screen) -> None:
-        """Make `screen` the base screen, replacing the previous one."""
+        """Make `screen` the base screen, replacing the previous one and any
+        screen pushed over it (Setup over a start problem, SETUP-7)."""
+        while len(self.screen_stack) > 2:
+            self.pop_screen()
         if len(self.screen_stack) > 1:
             self.switch_screen(screen)
         else:
@@ -162,7 +166,14 @@ class BookmanApp(App):
         self.open_library()
 
     def on_start_problem_screen_setup_requested(self) -> None:
-        self.show_setup()
+        """Open Setup over the problem, so `Esc` can return to it (SETUP-7)."""
+        self._problem_sub_title = self.sub_title
+        self.sub_title = ""
+        self.push_screen(SetupScreen(can_go_back=True))
+
+    def on_setup_screen_back_requested(self) -> None:
+        self.sub_title = self._problem_sub_title
+        self.pop_screen()
 
     def on_setup_screen_library_chosen(self, message: SetupScreen.LibraryChosen) -> None:
         self.open_library(chosen=message.path)
