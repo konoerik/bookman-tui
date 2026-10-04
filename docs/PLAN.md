@@ -7,7 +7,7 @@
 Skeleton first, in small milestones; each ends with a visual review by the
 user before the next starts.
 
-- **M5 Cover** — `textual-image` (ADR-5). 28×21 slot chosen; generated no-cover placeholder. *Built; awaiting visual review*
+- **M5 Cover** — `textual-image` (ADR-5). 28×21 slot chosen; generated no-cover placeholder. *Done; reviewed in Ghostty (graphics protocol works). Panel borders made static (accent 65%), one shared background*
 - **M6 Find** — FIND-1..6
 - **M7 Sort, group, prefs** — BROWSE-8/9/10
 - **M8 Reveal and copy** — BROWSE-11..13
@@ -15,9 +15,8 @@ user before the next starts.
   width next to author and formats (rebalance, e.g. cap the title or share
   spare width); the plain table look (stripes, header, colours) once the
   browser is complete; the narrow details screen (BROWSE-7) leaves the right
-  side empty with everything left-aligned (centre it, or use the width)
-  and its background is darker than the list's, with a scrollbar on short
-  terminals
+  side empty with everything left-aligned (centre it, or use the width),
+  and it shows a scrollbar on short terminals
 
 
 ## Backlog
