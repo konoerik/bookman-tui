@@ -53,6 +53,9 @@ class BookmanApp(App):
     catalog: reactive[Catalog | None] = reactive(None, always_update=True)
     """Every book from the last scan (ADR-3); None while loading."""
 
+    search: reactive[str] = reactive("")
+    """The search narrowing the book list (FIND-1); empty for none."""
+
     def __init__(self, library: Path | None = None) -> None:
         super().__init__()
         self.library_arg = library

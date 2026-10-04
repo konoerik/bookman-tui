@@ -8,10 +8,14 @@ Skeleton first, in small milestones; each ends with a visual review by the
 user before the next starts.
 
 - **M5 Cover** — `textual-image` (ADR-5). 28×21 slot chosen; generated no-cover placeholder. *Done; reviewed in Ghostty (graphics protocol works). Panel borders made static (accent 65%), one shared background*
-- **M6 Find** — FIND-1..6
+- **M6 Search** — FIND-1, 2, 5, 6, 7 (the review filter is split out, see M8). *Done; reviewed*
 - **M7 Sort, group, prefs** — BROWSE-8/9/10
-- **M8 Reveal and copy** — BROWSE-11..13
-- **M9 UI polish** — from the M3 review: the title column takes too much
+- **M8 Filters** — design first, then build: the needs-review view (was
+  FIND-3/4) and how it relates to search and to grouping by Status; IMPORT-10's
+  `r` and REVIEW-2 depend on it; key not chosen (`n` may be kept for "next").
+  Open question in FLOWS.md
+- **M9 Reveal and copy** — BROWSE-11..13
+- **M10 UI polish** — from the M3 review: the title column takes too much
   width next to author and formats (rebalance, e.g. cap the title or share
   spare width); the plain table look (stripes, header, colours) once the
   browser is complete; the narrow details screen (BROWSE-7) leaves the right

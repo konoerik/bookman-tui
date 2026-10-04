@@ -22,8 +22,22 @@
     background-tint: $foreground 0%;
 }
 
-BrowserScreen.empty #books {
-    align: center middle;
+/* Search (FIND-1): hidden until `/`, kept while a search is active; its
+   match counts (FIND-7) sit at the right end of the row. */
+#search-bar {
+    display: none;
+    height: 1;
+    margin: 0 1 1 1;
+}
+
+#search {
+    width: 1fr;
+}
+
+#search-counts {
+    width: auto;
+    padding: 0 0 0 2;
+    color: $text-muted;
 }
 
 #book-table {
@@ -96,8 +110,11 @@ BookDetail Static {
     color: $text-muted;
 }
 
+/* Empty library (BROWSE-6) or no matches (FIND-5), centred in the panel. */
 #books-message {
-    width: auto;
+    width: 1fr;
+    height: 1fr;
+    content-align: center middle;
     color: $text-muted;
 }
 

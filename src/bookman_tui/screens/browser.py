@@ -1,17 +1,19 @@
-"""Home: the library browser (BROWSE/FIND). M4: table, detail pane, counts."""
+"""Home: the library browser (BROWSE/FIND): table, detail pane, counts, search."""
 
 from __future__ import annotations
 
+from rich.markup import escape
+from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
-from textual.events import Resize
+from textual.events import DescendantBlur, Resize
 from textual.reactive import reactive
 from textual.screen import Screen
-from textual.widgets import DataTable, Footer, Header, Static
+from textual.widgets import DataTable, Footer, Header, Input, Static
 
 from bookman_tui.screens.details import DetailsScreen
-from bookman_tui.store import Catalog
+from bookman_tui.store import Catalog, match_summary
 from bookman_tui.widgets.book_detail import BookDetail
 from bookman_tui.widgets.book_table import BookTable
 
@@ -19,28 +21,42 @@ NARROW = 100
 """Below this many columns the detail pane is hidden (BROWSE-7)."""
 
 
-def status_text(catalog: Catalog) -> str:
-    """The status line: book count and review queue size (BROWSE-4)."""
+def status_text(catalog: Catalog, listed: int | None = None) -> str:
+    """The status line: book count and review queue size (BROWSE-4).
+
+    `listed` is how many books a search left in the list, if one is active:
+    "12 of 340 books · …".
+    """
     noun = "book" if len(catalog) == 1 else "books"
-    return f"{len(catalog)} {noun} · {catalog.review_count} need review"
+    shown = f"{listed} of " if listed is not None else ""
+    return f"{shown}{len(catalog)} {noun} · {catalog.review_count} need review"
 
 
 class BrowserScreen(Screen):
     """Every book in the library, with the selected one's details beside it."""
 
+    AUTO_FOCUS = "#book-table"
+    """The search box takes focus only on `/` (FIND-1)."""
+
     BINDINGS = [
         Binding("q", "app.quit", "Quit"),
+        Binding("slash", "search", "Search", key_display="/"),
+        Binding("escape", "clear_search", "Clear search", show=False),
         Binding("ctrl+r", "app.reload", "Reload"),
         Binding("enter", "details", "Details"),
     ]
 
     selected_id: reactive[str | None] = reactive(None)
-    """The highlighted book, kept across reloads by id (G-3)."""
+    """The highlighted book, kept across reloads and searches by id (G-3).
+    Not cleared when a search matches nothing, so clearing it returns there."""
 
     def compose(self) -> ComposeResult:
         yield Header()
         with Horizontal(id="main"):
             with Vertical(id="books"):
+                with Horizontal(id="search-bar"):
+                    yield Input(placeholder="Search title, author or ISBN", id="search", compact=True)
+                    yield Static("", id="search-counts")
                 yield BookTable(id="book-table")
                 yield Static("Loading library…", id="books-message")
             yield BookDetail(id="detail")
@@ -51,27 +67,83 @@ class BrowserScreen(Screen):
         self.query_one("#books").border_title = "Library"
         self.query_one(BookDetail).border_title = "Details"
         self.watch(self.app, "catalog", self.show_catalog)
+        self.watch(self.app, "search", self.show_search, init=False)
 
     def show_catalog(self, catalog: Catalog | None) -> None:
+        """The books changed (load, reload or a write): a book that no longer
+        matches leaves and the selection moves to the next one (FIND-6)."""
+        self._show_books(self.selected_id)
+
+    def show_search(self, query: str) -> None:
+        """The search changed: keep the selected book if it still matches,
+        else select the first match (FIND-6)."""
+        catalog = self.app.catalog
+        keep = catalog is not None and any(book.id == self.selected_id for book in catalog.search(query))
+        self._show_books(self.selected_id if keep else None)
+
+    def _show_books(self, selected_id: str | None) -> None:
+        catalog: Catalog | None = self.app.catalog
+        query: str = self.app.search
         table = self.query_one(BookTable)
         message = self.query_one("#books-message", Static)
         status = self.query_one("#status", Static)
+        searching = bool(query.strip())
+        books = catalog.search(query) if catalog else []
         if catalog is None:
             message.update("Loading library…")
-            status.update("")
         elif not catalog:
             message.update("No books yet — press [bold]i[/] to import")
-        status.update(status_text(catalog) if catalog is not None else "")
-        has_books = bool(catalog)
-        table.display = has_books
-        message.display = not has_books
-        self.set_class(not has_books, "empty")
-        if catalog:
-            table.show(catalog.ordered(), self.selected_id)
-            table.focus()
+        elif not books:
+            message.update(f'No books match "{escape(query)}"')  # FIND-5
+        status.update(status_text(catalog, len(books) if searching else None) if catalog is not None else "")
+        self.query_one("#search-counts", Static).update(match_summary(books, query) if searching else "")
+        table.display = bool(books)
+        message.display = not books
+        self.set_class(not catalog, "empty")
+        self._show_search_box()
+        if books:
+            table.show(books, selected_id)
+            if not self.query_one("#search", Input).has_focus:
+                table.focus()
+        else:
+            self.query_one(BookDetail).book = None
+
+    def _show_search_box(self) -> None:
+        """The box and its counts show while it has focus or a search is
+        active (FIND-1, FIND-7)."""
+        box = self.query_one("#search", Input)
+        self.query_one("#search-bar").display = bool(self.app.catalog) and (
+            box.has_focus or bool(self.app.search.strip())
+        )
+
+    def action_search(self) -> None:
+        self.query_one("#search-bar").display = True
+        self.query_one("#search", Input).focus()
+
+    def action_clear_search(self) -> None:
+        """`Esc` clears the search from the box or the list (FIND-2, G-5)."""
+        box = self.query_one("#search", Input)
+        box.value = ""
+        self.app.search = ""
+        self.query_one(BookTable).focus()
+        self._show_search_box()
+
+    @on(Input.Changed, "#search")
+    def search_changed(self, event: Input.Changed) -> None:
+        self.app.search = event.value
+
+    @on(Input.Submitted, "#search")
+    def search_submitted(self) -> None:
+        """`Enter` goes back to the list of matches."""
+        self.query_one(BookTable).focus()
+
+    def on_descendant_blur(self, event: DescendantBlur) -> None:
+        if event.widget.id == "search":
+            self._show_search_box()
 
     def on_book_table_book_highlighted(self, message: BookTable.BookHighlighted) -> None:
-        self.selected_id = message.book_id
+        if message.book_id is not None:
+            self.selected_id = message.book_id
         catalog = self.app.catalog
         self.query_one(BookDetail).book = catalog.get(message.book_id) if catalog and message.book_id else None
 
@@ -82,7 +154,11 @@ class BrowserScreen(Screen):
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if action == "details":
             # Offered only while the pane is hidden (BROWSE-7).
-            return self.has_class("narrow") and self.selected_id is not None
+            return self.has_class("narrow") and self.query_one(BookDetail).book is not None
+        if action == "search":
+            return bool(self.app.catalog)
+        if action == "clear_search":
+            return bool(self.app.search) or self.query_one("#search", Input).has_focus
         return True
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:

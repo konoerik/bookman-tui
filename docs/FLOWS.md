@@ -158,8 +158,8 @@ it: cover, author, ISBN, formats, and how sure bookman is about the match.
 - **BROWSE-9** `g` cycles the grouping: none → Author → Status (needs review,
   matched online, checked by you) → Format. Each group has a header row with
   its size (`── Frank Herbert (3) ──`); the selection skips header rows.
-  Books with several formats appear under each of their formats. Search and
-  the review filter apply within groups.
+  Books with several formats appear under each of their formats. Search
+  applies within groups.
 - **BROWSE-10** The sort and grouping last used are remembered for the next
   session.
 - **BROWSE-11** `f` shows the selected book in the system file manager
@@ -172,26 +172,34 @@ it: cover, author, ISBN, formats, and how sure bookman is about the match.
 - **BROWSE-13** BROWSE-11 and 12 only read the library, so they stay
   available while an import runs (G-2).
 
-## FIND — Search and the review queue
+## FIND — Search
 
-*In short:* press `/` and type to narrow the list by title, author or ISBN. Press
-`n` to show only books that need review. The two combine.
+*In short:* press `/` and type to narrow the list by title, author or ISBN.
+`Enter` takes you back to the list of matches; `Esc` clears the search.
 
 Key budget: `/`, type, `Enter` (focus goes back to the list).
 
 - **FIND-1** Search is a case-insensitive substring match on title, author
   or ISBN. It updates on every keystroke (ADR-3). An ISBN matches with or
-  without hyphens and spaces.
-- **FIND-2** `Esc` in the search box clears it and shows all books again.
-- **FIND-3** `n` toggles the needs-review filter (`Book.needs_review`). The
-  header shows when it's on.
-- **FIND-4** Search and the review filter apply together (AND).
-- **FIND-5** If nothing matches, the table says so and names the active
-  search and filter.
-- **FIND-6** When a book stops matching the active filter because of an action
-  (e.g. marked reviewed with the filter on), it leaves the list and the
-  selection moves to the next book, so the queue can be worked through
-  top to bottom.
+  without hyphens and spaces. The search box sits at the top of the Library
+  panel: `/` shows and focuses it, and it stays visible while a search is
+  active, so the list always shows what narrowed it. `/` again edits it.
+- **FIND-2** `Esc` clears the search and shows all books again, from the
+  search box or from the list (G-5). Focus goes to the list and the box hides.
+- **FIND-3** *Withdrawn: the review filter moved out of search; filtering is
+  being redesigned (see Open questions).*
+- **FIND-4** *Withdrawn with FIND-3.*
+- **FIND-5** If nothing matches, the table says so and names the search:
+  `No books match "dune"`.
+- **FIND-6** While typing, the selected book stays selected if it still
+  matches; otherwise the first match is selected. When a book stops
+  matching because of an action (e.g. a title edit), it leaves the list and
+  the selection moves to the next book.
+- **FIND-7** Beside the search box, a count says how many books match and
+  on which fields: `3 books · 3 title · 0 author · 0 ISBN`. Each field
+  counts every book that matched on it, so a book matching on title and
+  author counts in both, but once in the book total. Hidden while the search
+  is blank.
 
 ## IMPORT — Adding books
 
@@ -319,8 +327,9 @@ Key budget: `v`.
 
 - **REVIEW-1** `v` toggles reviewed on the selected book (`mark_reviewed`).
   Nothing else about the book changes.
-- **REVIEW-2** With the review filter on, a book marked reviewed leaves the
-  list and the next book is selected (FIND-6).
+- **REVIEW-2** Once filtering exists (see Open questions): with the
+  needs-review filter on, a book marked reviewed leaves the list and the
+  next book is selected (FIND-6).
 
 ## LOOKUP — Re-identifying a book
 
@@ -384,6 +393,9 @@ otherwise. Each needs a flow here before it's built.
   detail pane. Deferred for speed: many images at once may be slow, and
   half-block covers are hard to recognise at thumbnail size (ADR-5); measure
   with the single detail-pane cover first.
+- Field prefixes in search (`author:le guin`, `isbn:978…`) to narrow to one
+  field. Plain search (FIND-1) already covers title, author and ISBN;
+  prefixes pay off once bookman exposes more fields (publisher, year).
 - Starting from books you already have (SETUP-5 only refuses). Two
   audiences to design for: loose files (e.g. a Downloads folder), where
   "new library + import from here" fits; and an organised collection (a
@@ -393,6 +405,13 @@ otherwise. Each needs a flow here before it's built.
   and the index stores folder names only [bookman 1.2.0 @ e080149].
 
 ## Open questions
+
+- **Filtering** (was FIND-3/4) Showing only books that need review is a fixed
+  view of the library rather than a search, so it gets its own design: which
+  filters (needs review; this import's books, which IMPORT-10's `r` relies
+  on), whether they combine with search and with grouping by Status
+  (BROWSE-9), how the header shows them, and which key. `n` may be better
+  kept for "next" (e.g. the next book that needs review).
 
 - **LOOKUP-2 / IMPORT-8** can't tell "the lookup failed" (e.g. offline) from
   "nothing matched": bookman treats a failed lookup as no record, in imports
