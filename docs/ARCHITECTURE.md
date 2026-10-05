@@ -46,6 +46,7 @@
 **Decision:** Run these in `@work(thread=True, exclusive=True)` workers and send results back with `post_message` or `call_from_thread`. The App holds a single "write in progress" state. While it's set, write actions (import, edit, mark reviewed, re-identify) are disabled and the UI says why. Imports consume `iter_import` so each file's start and result drive the progress display, and the summary is rebuilt with `ImportBatchResult.record`.
 **Alternatives considered:** Async wrappers (bookman is sync, so a thread would be needed anyway); `import_directory` (no progress until the whole batch is done).
 **Consequences:** Every write path goes through the guard. Cancelling an import stops pulling events; files already imported stay imported, as bookman documents.
+**Amendment (2026-10-04):** `iter_import` takes a whole directory only. A full selection from the preview (IMPORT-3) consumes `iter_import`; a ticked subset loops `import_file` in the TUI, building the same `ImportEvent`s, until bookman can import a list of files (inbox 2026-10-04) [bookman 1.3.0 @ 1bdad64]. A file that became held between preview and import is then reported as imported rather than `AlreadyInLibrary`; nothing changes on disk either way.
 
 ### ADR-5: Covers rendered with `textual-image`
 **Date:** 2026-09-26
@@ -93,6 +94,12 @@
 **Alternatives considered:** Storing prefs in bookman's `config.json` (bookman's file, ruled out by ADR-6); `platformdirs` for the location (only a transitive dependency of Textual); an error screen for a bad prefs file (too heavy for display settings); grouping inside `BookTable` (couples list logic to the widget, testable only through Pilot); overriding each cursor action to skip headers (keys, mouse and refills all move the cursor differently).
 **Consequences:** The theme joins the same file later (ADR-7). Moving the cursor from a header is a second highlight event, invisible to the user. In row mode `DataTable` moves to top and bottom with `ctrl+home`/`ctrl+end`; plain `home`/`end` only scroll sideways (Textual 8.2.8).
 
+### ADR-10: An import is an app-owned `ImportJob` shown by one `ImportScreen`
+**Date:** 2026-10-04
+**Context:** IMPORT-5 (M9) needs an import to keep running when its screen is left for the browser, with progress in the browser footer and `i` reopening it. The flow is Path → Preview → Running → Summary (FLOWS.md IMPORT state diagram).
+**Decision:** An `ImportJob` holds the files, progress, counts and the `ImportBatchResult`. The App owns it and runs it in an app-level thread worker, per ADR-4. One `ImportScreen` steps through the four states and only displays the job.
+**Alternatives considered:** The worker on the screen (it dies or is orphaned when the screen is dismissed, so M9 would rework it); a screen per state (four screens passing one job around, more stack handling, and `i` would have to find the right one).
+**Consequences:** M9's background mode is the screen dismissed while the job carries on; the browser footer and `i` read the same job. The job is the single-writer state ADR-4 calls for, so write actions check it.
 
 ## Detail
 
