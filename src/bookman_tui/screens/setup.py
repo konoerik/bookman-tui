@@ -26,6 +26,7 @@ from textual.screen import Screen
 from textual.widgets import Footer, Header, Input, Static
 
 from bookman_tui.location import display_path
+from bookman_tui.widgets.path_input import PathInput, format_choices
 
 NOT_EMPTY = (
     "A library needs an empty folder: bookman fills it with its own copies of "
@@ -130,7 +131,7 @@ class SetupScreen(Screen):
         with Vertical(id="setup"):
             yield Static("Choose a folder for your library", id="setup-heading")
             yield Static("Books are copied into this folder when you import them.", id="setup-intro")
-            yield Input(self.prefill, placeholder="~/Books", id="setup-path")
+            yield PathInput(self.prefill, placeholder="~/Books", id="setup-path")
             yield Static("", id="setup-hint")
         yield Footer()
 
@@ -149,6 +150,13 @@ class SetupScreen(Screen):
         hint.update(prompt)
         hint.remove_class("error")
         hint.add_class("confirm")
+
+    def on_path_input_choices(self, event: PathInput.Choices) -> None:
+        """List what `Tab` couldn't choose between, until the path changes
+        (IMPORT-1)."""
+        hint = self.query_one("#setup-hint", Static)
+        hint.update(format_choices(event.choices))
+        hint.remove_class("error", "confirm")
 
     def on_input_changed(self, event: Input.Changed) -> None:
         self.confirming = False
