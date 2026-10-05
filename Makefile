@@ -7,7 +7,7 @@ MOCK := .dev/mock-library
 BIG := .dev/mock-big
 SANDBOX_ENV := BOOKMAN_CONFIG=$(CURDIR)/$(SANDBOX)/config.json BOOKMAN_TUI_PREFS=$(CURDIR)/$(SANDBOX)/prefs.json BOOKMAN_LIBRARY=
 
-.PHONY: test run dev console mock try-mock try-big try-real try-firstrun try-empty try-missing try-notlibrary try-badconfig clean-sandbox
+.PHONY: test run dev console mock try-mock try-big try-real try-firstrun try-empty try-import try-missing try-notlibrary try-badconfig clean-sandbox
 
 test:
 	uv run pytest
@@ -56,6 +56,13 @@ try-firstrun: clean-sandbox
 try-empty: clean-sandbox
 	mkdir -p $(SANDBOX)/empty-library
 	env $(SANDBOX_ENV) uv run bookman-tui --library $(SANDBOX)/empty-library
+
+# IMPORT: an empty library with lookups off, and $(SANDBOX)/downloads to
+# import from (Tab completes; try a single file, the folder, subfolders)
+try-import: clean-sandbox
+	uv run python tools/mock_library.py $(SANDBOX)/downloads --downloads
+	uv run python -c "from pathlib import Path; from bookman import Config, Library, NullSource, save_config; Library(Path('$(SANDBOX)/library'), source=NullSource()); save_config(Config(library=Path('$(CURDIR)/$(SANDBOX)/library'), offline=True), Path('$(SANDBOX)/config.json'))"
+	cd $(SANDBOX) && env $(SANDBOX_ENV) uv run bookman-tui
 
 # START-5: a library on a drive that isn't connected (`r` retries after you mkdir it)
 try-missing: clean-sandbox

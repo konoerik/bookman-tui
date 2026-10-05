@@ -188,3 +188,70 @@ StartProblemScreen, SetupScreen {
     width: auto;
     margin-right: 2;
 }
+
+/* ---- Import (IMPORT, ADR-10) ---- */
+
+ImportScreen {
+    align: center top;
+}
+
+#import {
+    width: 100;
+    max-width: 100%;
+    height: 1fr;
+    margin: 1 0 0 0;
+    padding: 1 2;
+    border: round $primary;
+}
+
+#stage-path, #stage-preview, #stage-running, #stage-summary {
+    height: 1fr;
+}
+
+.import-heading {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.import-intro {
+    color: $text-muted;
+    margin-bottom: 1;
+}
+
+#import-hint, #preview-hint, #run-current, #run-counts {
+    padding: 0 1;
+    color: $text-muted;
+}
+
+#import-hint.error {
+    color: $error;
+}
+
+#import-recursive {
+    margin: 1 0;
+}
+
+#preview-filter {
+    margin-bottom: 1;
+}
+
+#preview-list, #run-log {
+    height: 1fr;
+}
+
+#run-progress {
+    margin-bottom: 1;
+}
+
+#run-log {
+    margin-top: 1;
+}
+
+#summary-scroll {
+    height: 1fr;
+}
+
+#summary-buttons {
+    height: auto;
+    margin-top: 1;
+}

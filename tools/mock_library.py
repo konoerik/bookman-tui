@@ -282,14 +282,33 @@ def build(dest: Path, count: int = 0) -> list[Book]:
     return library.scan()
 
 
+def write_downloads(dest: Path) -> None:
+    """A folder to import from (IMPORT): the catalogue's files, loose, plus
+    a broken EPUB, an unsupported .mobi, a hidden file, and a subfolder."""
+    dest.mkdir(parents=True)
+    for spec in CATALOGUE:
+        for kind in spec.kinds:
+            (write_epub if kind == "epub" else write_pdf)(dest / f"{_stem(spec)}.{kind}", spec)
+    (dest / "broken.epub").write_bytes(b"not a zip")
+    (dest / "Dune.mobi").write_bytes(b"")
+    (dest / ".DS_Store").write_bytes(b"")
+    (dest / "more").mkdir()
+    for spec in synthetic(3):
+        write_epub(dest / "more" / f"{_stem(spec)}.epub", spec)
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("dest", type=Path)
     parser.add_argument("--count", type=int, default=0, help="synthetic books to add")
     parser.add_argument("--force", action="store_true", help="replace dest if it exists")
+    parser.add_argument("--downloads", action="store_true", help="write loose files to import instead")
     args = parser.parse_args(argv)
     if args.force and args.dest.exists():
         shutil.rmtree(args.dest)
+    if args.downloads:
+        write_downloads(args.dest)
+        return
     books = build(args.dest, args.count)
     queue = sum(book.needs_review for book in books)
     print(f"{args.dest}: {len(books)} books, {queue} need review", file=sys.stderr)

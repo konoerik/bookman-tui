@@ -7,6 +7,7 @@ from pathlib import Path
 
 from bookman import (
     ConfigError,
+    ImportEvent,
     Library,
     LibraryLocation,
     LibraryNotConfiguredError,
@@ -21,10 +22,13 @@ from textual.app import App
 from textual.binding import Binding
 from textual.reactive import reactive
 from textual.screen import Screen
+from textual.signal import Signal
 
+from bookman_tui.importing import ImportJob
 from bookman_tui.location import display_path, header_text, not_found_reason, sentence
 from bookman_tui.prefs import Prefs, load_prefs, save_prefs
 from bookman_tui.screens.browser import BrowserScreen
+from bookman_tui.screens.import_screen import ImportScreen
 from bookman_tui.screens.setup import SetupScreen
 from bookman_tui.screens.start_problem import StartProblemScreen
 from bookman_tui.store import Catalog, Grouping, Sort
@@ -69,6 +73,10 @@ class BookmanApp(App):
         self.library: Library | None = None
         self.location: LibraryLocation | None = None
         self._problem_sub_title = ""
+        self.import_job: ImportJob | None = None
+        """The import running or just finished (ADR-10); None when there's none."""
+        self.import_signal: Signal[ImportJob] = Signal(self, "import")
+        """Published on every change to `import_job`, for the screens showing it."""
         prefs = load_prefs()
         self.set_reactive(BookmanApp.sort, prefs.sort)
         self.set_reactive(BookmanApp.grouping, prefs.grouping)
@@ -188,6 +196,67 @@ class BookmanApp(App):
         """Re-read the library from disk (BROWSE-5)."""
         if self.library is not None:
             self.load_books(announce=True)
+
+    @property
+    def importing(self) -> bool:
+        """An import is running: the one write in progress (ADR-4, G-2)."""
+        return self.import_job is not None and not self.import_job.finished
+
+    def action_import_books(self) -> None:
+        """`i`: open the import screen (IMPORT-1)."""
+        if self.library is not None and not isinstance(self.screen, ImportScreen):
+            self.push_screen(ImportScreen())
+
+    def start_import(self, job: ImportJob) -> None:
+        """Run `job` (ADR-10); the import screen follows it through the signal."""
+        if self.importing:
+            self.notify("An import is already running.", severity="warning")
+            return
+        self.import_job = job
+        self.import_signal.publish(job)
+        self.run_import(job)
+
+    @work(thread=True, exclusive=True, group="write")
+    def run_import(self, job: ImportJob) -> None:
+        """Pull the import's events off the UI thread (ADR-4) and stop
+        after a file's result once `x` was pressed (IMPORT-6)."""
+        assert self.library is not None
+        events = job.events(self.library)
+        try:
+            for event in events:
+                self.call_from_thread(self._import_event, job, event)
+                if event.outcome is not None and job.stopping:
+                    break
+        finally:
+            events.close()
+            self.call_from_thread(self._import_finished, job)
+
+    def _import_event(self, job: ImportJob, event: ImportEvent) -> None:
+        job.record(event)
+        self.import_signal.publish(job)
+
+    def _import_finished(self, job: ImportJob) -> None:
+        job.finish()
+        self.import_signal.publish(job)
+        self.load_books()
+
+    def close_import(self) -> None:
+        """Leave the summary for the browser, on the first imported book
+        (IMPORT-10)."""
+        job = self.import_job
+        self.import_job = None
+        if isinstance(self.screen, ImportScreen):
+            self.pop_screen()
+        book = job.first_book if job is not None else None
+        if book is not None and isinstance(self.screen, BrowserScreen):
+            self.screen.select(book.id)
+
+    def action_quit(self) -> None:
+        """Quit, unless an import is running (G-5)."""
+        if self.importing:
+            self.notify("An import is running. Stop it with x first.", severity="warning")
+            return
+        self.exit()
 
     def action_toggle_help(self) -> None:
         """Show or hide the keys for the current screen (G-6)."""

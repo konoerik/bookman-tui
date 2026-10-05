@@ -235,7 +235,10 @@ everything new; `Enter` on the summary. One book from a folder of many: add
 `a`, `/` + name, `Space`.
 
 - **IMPORT-1** Path input with tab completion: `Tab` completes the longest
-  unambiguous part, and a second `Tab` lists the choices. `~` is expanded.
+  unambiguous part, and a second `Tab` lists the choices. It's pre-filled
+  with the current folder and a trailing `/` (home shown as `~`), so a typed
+  name visibly lands inside it; the hint line names the full path. `~` is
+  expanded and a relative path is taken from the current folder.
   An "include subfolders" toggle (off by default, as in bookman) applies to
   folders.
 - **IMPORT-2** A path that doesn't exist, or an unsupported single file, is an
@@ -251,7 +254,10 @@ everything new; `Enter` on the summary. One book from a folder of many: add
   - new files start ticked; files already in the library and unsupported
     ones can't be ticked
   - `Space` toggles the selected file, `a` ticks or unticks all new files,
-    `/` filters the list by file name
+    `/` filters the list by file name. The filter only changes what's
+    shown: ticks on hidden files stay, `Enter` still imports every ticked
+    file, and while ticked files are hidden the hint says how many ("Enter
+    imports 34 files, 33 hidden by the filter")
   - `Enter` imports the ticked files ("Enter import 180"); nothing ticked,
     nothing starts. `Esc` goes back to the path.
 
@@ -264,7 +270,8 @@ everything new; `Enter` on the summary. One book from a folder of many: add
     estimated from the pace so far
   - the file currently being looked up (bookman reports it before the network
     lookup)
-  - running counts: imported, skipped, failed, conflicts
+  - running counts: imported, already in library, skipped, failed,
+    conflicts
   - a scrolling log of each file's result
 - **IMPORT-5** `Esc` returns to the browser while the import keeps running.
   The browser footer shows its progress (`Importing 37 / 212 · 3 min left`),
@@ -292,12 +299,14 @@ everything new; `Enter` on the summary. One book from a folder of many: add
     again to continue."
   - then, in this order, **Conflicts** (IMPORT-9), **Failed** (file and
     reason), **Imported** (resulting book, marked when it needs review),
+    **Already in library** (file and the book that has it; nothing changed),
     **Skipped** (unsupported files, e.g. `.mobi`). Empty sections are
     omitted.
   - `l` looks up again the books imported without Open Library
-    (IMPORT-8), in the background like LOOKUP-1; `Enter` returns to the
-    browser with the first imported book selected. The library is reloaded
-    either way.
+    (IMPORT-8), in the background like LOOKUP-1; `Enter`, or the
+    `Back to library ⏎` button that stays visible under the summary,
+    returns to the browser with the first imported book selected. The
+    library is reloaded either way.
 
 ```mermaid
 stateDiagram-v2

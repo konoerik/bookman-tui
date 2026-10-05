@@ -7,15 +7,6 @@
 Skeleton first, in small milestones; each ends with a visual review by the
 user before the next starts.
 
-- **M8 Import** — a finished import, watched on its own screen: path
-  widget with tab completion (IMPORT-1), shared with Setup, which gets the
-  completion SETUP-1 promised; single file or folder (IMPORT-2) and the
-  folder preview with ticks, `Space`, `a`, `/` and already-in-library marks
-  from `find_files` (IMPORT-3); progress screen, `x` to stop, bad files
-  counted (IMPORT-4/6/7); conflicts and summary (IMPORT-9/10, without `l`).
-  The ticked subset goes through `import_file` in a TUI loop until bookman
-  can import a list of files (inbox 2026-10-04); a full selection uses
-  `iter_import`. Empty-library hint (BROWSE-6) finally works
 - **M9 Import in the background** — `Esc` to the browser while it runs,
   footer progress, `i` reopens, summary opens on its own (IMPORT-5); one
   writer per library: block `ctrl+r` and later edits while importing
@@ -31,7 +22,9 @@ user before the next starts.
   spare width); the plain table look (stripes, header, colours) once the
   browser is complete; the narrow details screen (BROWSE-7) leaves the right
   side empty with everything left-aligned (centre it, or use the width),
-  and it shows a scrollbar on short terminals
+  and it shows a scrollbar on short terminals. From the M8 review: one
+  voice for hints and key prompts across screens (e.g. "Enter imports it"
+  vs "Press Enter again to create"), a style rule for it in FLOWS.md
 
 
 ## Backlog
@@ -62,3 +55,4 @@ user before the next starts.
   start problem, or on first run quits on a second press (SETUP-7);
   confirmations read "Press Enter/Esc again to …". *Done, reviewed
   2026-10-04*
+- **M8 Import** — IMPORT-1/2/3/4/6/7/9/10 (without `l`): `PathInput` with `Tab` completion (also in Setup), path pre-filled with the current folder; preview with ticks, `Space`/`a`/`/` and already-in-library marks from `find_files` (the filter is a view: hidden ticked files are counted in the hint); progress, `x` stops; summary with a `Back to library ⏎` button, then the browser on the first imported book. App-owned `ImportJob` (ADR-10); a subset loops `import_file` (ADR-4 amendment). `make try-import`. *Done, reviewed 2026-10-05*

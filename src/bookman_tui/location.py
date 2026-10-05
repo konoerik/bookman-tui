@@ -21,6 +21,12 @@ def display_path(path: Path) -> str:
         return str(path)
 
 
+def folder_text(path: Path) -> str:
+    """`path` as a folder to type after: `display_path` with a trailing `/`."""
+    shown = display_path(path)
+    return shown if shown.endswith("/") else f"{shown}/"
+
+
 def header_text(location: LibraryLocation) -> str:
     """The header subtitle: the library path and where it was named."""
     return f"{display_path(location.path)} · {ORIGIN_LABELS[location.origin]}"

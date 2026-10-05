@@ -60,6 +60,7 @@ class BrowserScreen(Screen):
         Binding("enter", "details", "Details"),
         Binding("o", "sort", "Sort"),
         Binding("g", "group", "Group"),
+        Binding("i", "app.import_books", "Import"),
     ]
 
     selected_id: reactive[str | None] = reactive(None)
@@ -140,6 +141,11 @@ class BrowserScreen(Screen):
         self.query_one("#search-bar").display = bool(self.app.catalog) and (
             box.has_focus or bool(self.app.search.strip())
         )
+
+    def select(self, book_id: str) -> None:
+        """Select `book_id` (e.g. the first book an import added, IMPORT-10)."""
+        self.selected_id = book_id
+        self._show_books(book_id)
 
     def action_search(self) -> None:
         self.query_one("#search-bar").display = True
