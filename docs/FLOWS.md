@@ -399,8 +399,6 @@ otherwise. Each needs a flow here before it's built.
 - Resolving a format conflict in the TUI (keep or replace a file, or split a
   wrongly grouped book). bookman has no API for either; merge and split are
   planned there [bookman 1.3.0 @ 1bdad64].
-- Deleting a book: no bookman API [bookman 1.3.0 @ 1bdad64] (also what `ReadIssue.NEEDS_CRYPTO` advises before a
-  re-import).
 - Choosing and configuring metadata sources: bookman deferred a source
   registry until it has a second source; today the one choice is online or
   offline (`Config.offline`) [bookman 1.3.0 @ 1bdad64] (ADR-6). Whether and
@@ -458,11 +456,12 @@ otherwise. Each needs a flow here before it's built.
     [bookman 1.3.0 @ 1bdad64]; is editing in place enough?
   - after an edit adds an ISBN or fixes the title, does a lookup run on its
     own, or does the dialog offer one, and does the path fit a key budget?
-  - removing a book: no flow has it, and bookman has no API for it; today
-    it means deleting the book's folder by hand, then `ctrl+r`
-    [bookman 1.3.0 @ 1bdad64] (inbox 2026-10-06). Part of this path (it is
-    also the fix for an unreadable file) or its own flow and milestone?
-    Whole book only, or one format of it too?
+  - removing a book (moved here from *Not yet* 2026-10-06): designed in
+    M10, built once bookman has the API (inbox 2026-10-06; today it means
+    deleting the book's folder by hand, then `ctrl+r`)
+    [bookman 1.3.0 @ 1bdad64]. It's also the fix bookman advises for an
+    unreadable file (`ReadIssue`). Whole book only, or one format of it
+    too? How is it confirmed, given there's no undo?
   - REVIEW-2's replacement: with Status grouping, `v` moves the book to
     "Checked by you" and the selection follows it (G-3); should it stay in
     Needs review on the next book instead?

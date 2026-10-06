@@ -11,7 +11,9 @@ user before the next starts.
   look up and mark reviewed as one path for any book, judged against the
   hardest case, an imported book with little or no metadata; then build
   EDIT-1..6, LOOKUP-1..3, REVIEW-1 and the summary's `l` (IMPORT-10),
-  all under one write guard (G-2). Replaces M8 Filters, dropped
+  all under one write guard (G-2). Removing a book is designed here too
+  (added 2026-10-06), and built once bookman has the API (inbox
+  2026-10-06). Replaces M8 Filters, dropped
   2026-10-03 (Status grouping covers the review queue; ADR-2 amended)
 - **M11 Reveal and copy** — BROWSE-11..13
 - **M12 UI polish** — from the M3 review: the title column takes too much
