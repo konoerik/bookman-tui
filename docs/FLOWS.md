@@ -412,6 +412,9 @@ otherwise. Each needs a flow here before it's built.
   default; whether to keep a list of recent libraries). Until then, use
   `--library DIR` or `$BOOKMAN_LIBRARY`. A library can be moved freely (see
   above), so no flow is needed for that.
+- Telling the user about books bookman can't read: `scan` skips a broken
+  metadata.json without saying so [bookman 1.3.0 @ 1bdad64] (inbox
+  2026-10-06).
 - A cover grid view: a toggle that swaps the table for covers with titles
   underneath, same search, sort and grouping, for browsing by what a book looks
   like. Until then, flipping through with `j`/`k` shows each cover in the
@@ -461,7 +464,16 @@ otherwise. Each needs a flow here before it's built.
     deleting the book's folder by hand, then `ctrl+r`)
     [bookman 1.3.0 @ 1bdad64]. It's also the fix bookman advises for an
     unreadable file (`ReadIssue`). Whole book only, or one format of it
-    too? How is it confirmed, given there's no undo?
+    too? How is it confirmed, given there's no undo? (Asked bookman for
+    Trash rather than deletion.)
+  - the lookup picked the wrong book: choosing among candidates needs a
+    bookman API (inbox 2026-10-06; FEATURES K5); until then the fix is a
+    hand edit, then a lookup. Does the design leave room for a candidate
+    list?
+  - setting a cover by hand: bookman has `set_cover(book, image)`, which
+    marks the book reviewed, and `reidentify(book, replace_cover=True)` to
+    fetch the record's cover [bookman 1.3.0 @ 1bdad64]. No flow uses
+    either; does a picked image file belong in this path?
   - REVIEW-2's replacement: with Status grouping, `v` moves the book to
     "Checked by you" and the selection follows it (G-3); should it stay in
     Needs review on the next book instead?
