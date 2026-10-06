@@ -7,11 +7,6 @@
 Skeleton first, in small milestones; each ends with a visual review by the
 user before the next starts.
 
-- **M9 Import in the foreground** — background import deferred
-  2026-10-05 (ADR-10 amendment, FLOWS.md *Not yet*). `Esc` while running
-  hints that `x` stops (IMPORT-5); failed lookups (IMPORT-8, `Book.lookup`);
-  the import worker leaves the shared `exclusive` write group (ADR-10).
-  *Built 2026-10-06, awaiting review*
 - **M10 Edit and lookup** — design first (FLOWS.md Open questions): edit,
   look up and mark reviewed as one path for any book, judged against the
   hardest case, an imported book with little or no metadata; then build
@@ -58,3 +53,9 @@ user before the next starts.
   confirmations read "Press Enter/Esc again to …". *Done, reviewed
   2026-10-04*
 - **M8 Import** — IMPORT-1/2/3/4/6/7/9/10 (without `l`): `PathInput` with `Tab` completion (also in Setup), path pre-filled with the current folder; preview with ticks, `Space`/`a`/`/` and already-in-library marks from `find_files` (the filter is a view: hidden ticked files are counted in the hint); progress, `x` stops; summary with a `Back to library ⏎` button, then the browser on the first imported book. App-owned `ImportJob` (ADR-10); a subset loops `import_file` (ADR-4 amendment). `make try-import`. *Done, reviewed 2026-10-05*
+- **M9 Import in the foreground** — background import deferred
+  2026-10-05 (ADR-10 amendment, FLOWS.md *Not yet*). `Esc` while running
+  hints that `x` stops (IMPORT-5); one notice when lookups fail (IMPORT-8,
+  `Book.lookup`); the import worker leaves the shared `exclusive` write
+  group (ADR-10). *Done, reviewed 2026-10-06 (`Esc`/`x` mid-import; IMPORT-8
+  with Wi-Fi off)*
