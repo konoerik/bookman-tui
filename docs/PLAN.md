@@ -21,7 +21,10 @@ user before the next starts.
   side empty with everything left-aligned (centre it, or use the width),
   and it shows a scrollbar on short terminals. From the M8 review: one
   voice for hints and key prompts across screens (e.g. "Enter imports it"
-  vs "Press Enter again to create"), a style rule for it in FLOWS.md
+  vs "Press Enter again to create"), a style rule for it in FLOWS.md.
+  From the M9 review: the "Include subfolders" checkbox sits between the
+  path and `Enter`, and `Tab` completes the path rather than moving focus,
+  so ticking it means a trip to the mouse (move it, or give it a key)
 
 
 ## Backlog

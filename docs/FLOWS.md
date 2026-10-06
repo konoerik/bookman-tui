@@ -458,6 +458,11 @@ otherwise. Each needs a flow here before it's built.
     [bookman 1.3.0 @ 1bdad64]; is editing in place enough?
   - after an edit adds an ISBN or fixes the title, does a lookup run on its
     own, or does the dialog offer one, and does the path fit a key budget?
+  - removing a book: no flow has it, and bookman has no API for it; today
+    it means deleting the book's folder by hand, then `ctrl+r`
+    [bookman 1.3.0 @ 1bdad64] (inbox 2026-10-06). Part of this path (it is
+    also the fix for an unreadable file) or its own flow and milestone?
+    Whole book only, or one format of it too?
   - REVIEW-2's replacement: with Status grouping, `v` moves the book to
     "Checked by you" and the selection follows it (G-3); should it stay in
     Needs review on the next book instead?
