@@ -100,6 +100,7 @@
 **Decision:** An `ImportJob` holds the files, progress, counts and the `ImportBatchResult`. The App owns it and runs it in an app-level thread worker, per ADR-4. One `ImportScreen` steps through the four states and only displays the job.
 **Alternatives considered:** The worker on the screen (it dies or is orphaned when the screen is dismissed, so M9 would rework it); a screen per state (four screens passing one job around, more stack handling, and `i` would have to find the right one).
 **Consequences:** M9's background mode is the screen dismissed while the job carries on; the browser footer and `i` read the same job. The job is the single-writer state ADR-4 calls for, so write actions check it.
+**Amendment (2026-10-05):** Imports run in the foreground only; background mode (IMPORT-5) moved to FLOWS.md *Not yet*. With every write refused during an import (G-2) it buys only browsing, and it makes every later write path (edit, lookup, mark reviewed, reload) depend on the guard while the browser is live. The import screen covering the browser already keeps other writes out. The app-owned job stays, so background mode can be added later without rework. Separately, write workers don't share an `exclusive=True` group: Textual would mark a running import cancelled when another write worker starts, but a thread worker can't be stopped, so both would write. The guard (`App.importing`, later a general write state) decides what runs, not worker cancellation.
 
 ## Detail
 
@@ -112,7 +113,7 @@ src/bookman_tui/
 ├── store.py          # In-memory catalog keyed by Book.id; search, sort, grouping (ADR-3, ADR-9)
 ├── screens/
 │   ├── browser.py    # Home: book table + detail pane, search
-│   ├── import_.py    # Path entry, preview, live progress (can run in background), summary
+│   ├── import_.py    # Path entry, preview, live progress, summary
 │   ├── edit.py       # Modal: title / author / ISBN edit
 │   ├── details.py    # Book details as a screen on narrow terminals (BROWSE-7)
 │   ├── settings.py   # Not built until metadata sources exist (ADR-6, ADR-8)
@@ -137,6 +138,6 @@ What each screen shows and which keys it takes is specified in `docs/FLOWS.md` (
 - **Start problem** (START-4/5): shown instead of Browser when the config is invalid or the library can't be opened; routes to retry, Setup or quit.
 - **Browser** (home; BROWSE/FIND): table + detail pane; the header carries the library path (SETTINGS-1).
 - **Details** (pushed): the detail pane as its own screen on narrow terminals (BROWSE-7).
-- **Import** (pushed; IMPORT): path → preview → running → summary. While running it can be dismissed to the Browser and reopened; the worker belongs to the App, not the screen (ADR-4).
+- **Import** (pushed; IMPORT): path → preview → running → summary. It holds the screen until the import ends or is stopped; the worker belongs to the App, not the screen (ADR-10).
 - **Edit** (modal; EDIT).
 - **Settings:** not built until metadata sources exist (ADR-8).

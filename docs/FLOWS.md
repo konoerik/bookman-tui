@@ -40,8 +40,8 @@ limits carry a `[bookman 1.3.0 @ 1bdad64]` tag; re-check them when the baseline 
   and retry. Any other error is a bug and is not dressed up.
 - **G-5** `q` quits from the browser. `Esc` closes the current screen or
   dialog, or clears the search from the browser. Quitting is refused while an
-  import is running, even in the background (G-2); stop it first with `x`
-  on the import screen (IMPORT-6).
+  import is running (G-2); stop it first with `x` on the import screen
+  (IMPORT-6).
 - **G-6** `?` shows the keys available on the current screen.
 
 ---
@@ -189,7 +189,7 @@ it: cover, author, ISBN, formats, and how sure bookman is about the match.
   which one first (`1` EPUB, `2` PDF, …). The clipboard is written through
   the terminal, so this also works over SSH, unlike BROWSE-11.
 - **BROWSE-13** BROWSE-11 and 12 only read the library, so they stay
-  available while an import runs (G-2).
+  available while a change to it runs, such as a lookup (G-2).
 
 ## FIND — Search
 
@@ -226,9 +226,9 @@ Key budget: `/`, type, `Enter` (focus goes back to the list).
 *In short:* press `i` and give a file or folder (with tab completion). For a
 folder you first see what's in it and what's new, and can pick just the books
 you want. Then bookman looks each one up online and files it while a progress
-bar shows how long is left; you can go back to browsing meanwhile. Your
-original files are copied, never moved or changed, and importing the same
-folder again only brings in what's missing.
+bar shows how long is left. The import holds the screen until it ends or
+you stop it with `x`. Your original files are copied, never moved or
+changed, and importing the same folder again only brings in what's missing.
 
 Key budget: `i`, type or tab-complete the path, `Enter`, `Enter` to import
 everything new; `Enter` on the summary. One book from a folder of many: add
@@ -273,10 +273,9 @@ everything new; `Enter` on the summary. One book from a folder of many: add
   - running counts: imported, already in library, skipped, failed,
     conflicts
   - a scrolling log of each file's result
-- **IMPORT-5** `Esc` returns to the browser while the import keeps running.
-  The browser footer shows its progress (`Importing 37 / 212 · 3 min left`),
-  and `i` reopens the import screen instead of starting a new import. When it
-  finishes, the summary opens on its own.
+- **IMPORT-5** The import runs in the foreground: while it runs, `Esc` stays
+  on the import screen and the hint says `x` stops it (IMPORT-6). Going back
+  to browsing during an import is in *Not yet* (ADR-10).
 - **IMPORT-6** `x` on the import screen stops the import after the current
   file finishes. Files already imported stay imported.
 - **IMPORT-7** One bad file never stops the batch; it's counted and listed.
@@ -316,10 +315,8 @@ stateDiagram-v2
     Path --> Running: single file
     Preview --> Path: Esc
     Preview --> Running: Enter (IMPORT-3)
-    Running --> Background: Esc (IMPORT-5)
-    Background --> Running: i
+    Running --> Running: Esc — hint that x stops (IMPORT-5)
     Running --> Summary: last file done
-    Background --> Summary: last file done
     Running --> Summary: x — stop after current file (IMPORT-6)
     Summary --> [*]: Enter / l (IMPORT-10)
     Path --> [*]: Esc
@@ -439,6 +436,13 @@ otherwise. Each needs a flow here before it's built.
   gathers the review queue with its count, and users know their own
   library well enough to find the rest by search or grouping. Revisit if
   more criteria come up (no cover, no ISBN) or the review queue gets large.
+- Importing in the background (was IMPORT-5, M9): `Esc` back to the
+  browser while the import carries on, its progress in the browser footer,
+  `i` reopening it and the summary opening on its own. Deferred on
+  2026-10-05: with every write refused during an import (G-2), it buys only
+  browsing, and it makes every later write path (edit, lookup, mark
+  reviewed, reload) depend on the guard. The app-owned job (ADR-10) lets it
+  be added later without rework.
 
 ## Open questions
 

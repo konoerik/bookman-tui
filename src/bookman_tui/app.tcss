@@ -218,7 +218,7 @@ ImportScreen {
     margin-bottom: 1;
 }
 
-#import-hint, #preview-hint, #run-current, #run-counts {
+#import-hint, #preview-hint, #run-current, #run-counts, #run-hint {
     padding: 0 1;
     color: $text-muted;
 }

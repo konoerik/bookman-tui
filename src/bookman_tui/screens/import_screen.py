@@ -135,6 +135,7 @@ class ImportScreen(Screen):
 
     BINDINGS = [
         Binding("escape", "back", "Back"),
+        Binding("escape", "hold", show=False),
         Binding("space", "noop", "Tick", show=False),  # footer hint for the list's own Space
         Binding("slash", "filter", "Filter", key_display="/", show=False),
         Binding("x", "stop", "Stop", show=False),
@@ -182,6 +183,7 @@ class ImportScreen(Screen):
                 yield Static("", id="run-current")
                 yield Static("", id="run-counts")
                 yield RichLog(id="run-log", markup=False, wrap=True)
+                yield Static("", id="run-hint")
             with Vertical(id=Stage.SUMMARY.value):
                 yield Static("Import finished", id="summary-title", classes="import-heading")
                 with VerticalScroll(id="summary-scroll"):
@@ -192,6 +194,7 @@ class ImportScreen(Screen):
 
     def on_mount(self) -> None:
         self.query_one("#preview-filter").display = False
+        self.query_one("#run-hint").display = False
         self.show_path_hint(self.query_one("#import-path", Input).value)
         self.app.import_signal.subscribe(self, self.show_job)
         job: ImportJob | None = self.app.import_job
@@ -220,6 +223,8 @@ class ImportScreen(Screen):
             return stage in (Stage.PATH, Stage.PREVIEW, Stage.SUMMARY)
         if action in ("noop", "filter"):
             return stage is Stage.PREVIEW
+        if action == "hold":
+            return stage is Stage.RUNNING
         if action == "stop":
             job = self.app.import_job
             return stage is Stage.RUNNING and job is not None and not job.stopping
@@ -389,6 +394,7 @@ class ImportScreen(Screen):
             return
         if self.stage is not Stage.RUNNING:
             self.query_one("#run-log", RichLog).clear()
+            self.query_one("#run-hint").display = False
             self.logged = 0
             self.stage = Stage.RUNNING
         title = f"Importing {job.done} of {job.total}" if job.total else "Importing…"
@@ -434,6 +440,16 @@ class ImportScreen(Screen):
             self.app.close_import()
         elif self.stage is Stage.PATH:
             self.dismiss()
+
+    def action_hold(self) -> None:
+        """`Esc` while running: the import holds the screen (IMPORT-5)."""
+        job = self.app.import_job
+        hint = self.query_one("#run-hint", Static)
+        if job is not None and job.stopping:
+            hint.update("The import stops after the current file.")
+        else:
+            hint.update("The import holds this screen until it ends. x stops it after the current file.")
+        hint.display = True
 
     def action_noop(self) -> None:
         pass

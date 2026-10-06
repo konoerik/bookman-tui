@@ -216,7 +216,9 @@ class BookmanApp(App):
         self.import_signal.publish(job)
         self.run_import(job)
 
-    @work(thread=True, exclusive=True, group="write")
+    # Not `exclusive`: a thread worker can't be stopped, so cancelling it
+    # would leave two writers. The guard decides what runs (ADR-10).
+    @work(thread=True, group="write")
     def run_import(self, job: ImportJob) -> None:
         """Pull the import's events off the UI thread (ADR-4) and stop
         after a file's result once `x` was pressed (IMPORT-6)."""
@@ -232,7 +234,14 @@ class BookmanApp(App):
             self.call_from_thread(self._import_finished, job)
 
     def _import_event(self, job: ImportJob, event: ImportEvent) -> None:
+        reachable = not job.lookups_failed
         job.record(event)
+        if reachable and job.lookups_failed:
+            self.notify(
+                "Open Library can't be reached. Books are added from their files only; "
+                "the import carries on.",
+                severity="warning",
+            )
         self.import_signal.publish(job)
 
     def _import_finished(self, job: ImportJob) -> None:

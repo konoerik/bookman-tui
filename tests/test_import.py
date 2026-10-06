@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from bookman import Config, Library, NullSource, save_config
+from bookman import Config, Library, LookupOutcome, MetadataSourceError, NullSource, save_config
 from mock_library import Spec, isbn13, write_epub, write_pdf
 from textual.widgets import Input, Static
 
@@ -223,6 +223,55 @@ async def test_import_7_bad_file_is_counted_and_the_rest_import(library: Path, d
         assert summary.splitlines()[0] == "3 imported · 1 skipped · 1 failed"
         assert "Failed\nbroken.epub: not a valid EPUB (zip) file" in summary
         assert "Skipped\nnotes.mobi" in summary
+
+
+class Unreachable:
+    """A source whose every request fails, as without a network. Not a
+    `NullSource`: bookman takes that as offline [bookman 1.3.0 @ 1bdad64]."""
+
+    def lookup_by_isbn(self, isbn: str):
+        raise MetadataSourceError("network unreachable")
+
+    def search(self, title: str, author: str | None = None):
+        raise MetadataSourceError("network unreachable")
+
+    def fetch_cover(self, url: str) -> bytes:
+        raise MetadataSourceError("network unreachable")
+
+
+async def test_import_5_esc_while_running_stays_and_hints_x(library: Path) -> None:
+    app = BookmanApp()
+    async with app.run_test() as pilot:
+        screen = await open_import(app, pilot)
+        app.import_job = ImportJob(total=3)  # running: not finished
+        screen.show_job(app.import_job)
+        await pilot.pause()
+        assert not screen.query_one("#run-hint").display
+        await pilot.press("escape")
+        assert app.screen is screen and screen.stage is Stage.RUNNING
+        assert screen.query_one("#run-hint").display
+        assert "x stops it after the current file" in text(screen, "#run-hint")
+        app.import_job = None
+
+
+async def test_import_8_unreachable_lookup_notifies_once_and_carries_on(
+    library: Path, downloads: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    app = BookmanApp()
+    notices: list[str] = []
+    async with app.run_test() as pilot:
+        await open_import(app, pilot)
+        monkeypatch.setattr(app, "notify", lambda message, **kwargs: notices.append(message))
+        app.library = Library(library, source=Unreachable())
+        job = ImportJob(folder=downloads)
+        app.start_import(job)
+        await settle(app, pilot)
+        assert notices == [
+            "Open Library can't be reached. Books are added from their files only; the import carries on."
+        ]
+        assert job.counts["imported"] == 3
+        assert sorted(book.title for book in job.lookups_failed) == ["Dune", "Emma", "Walden"]
+        assert all(book.lookup is LookupOutcome.FAILED for book in job.lookups_failed)
 
 
 async def test_import_6_x_stops_after_the_current_file(library: Path, downloads: Path) -> None:

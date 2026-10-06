@@ -21,6 +21,7 @@ from bookman import (
     ImportBatchResult,
     ImportEvent,
     Library,
+    LookupOutcome,
     UnsupportedFormatError,
     supported_suffixes,
 )
@@ -181,6 +182,15 @@ class ImportJob:
             if count or not skip_zero
         ]
         return " · ".join(parts)
+
+    @property
+    def lookups_failed(self) -> list[Book]:
+        """Books imported from their files only because the lookup failed
+        (IMPORT-8), remembered for `l` (IMPORT-10) [bookman 1.3.0 @ 1bdad64]."""
+        books = {
+            book.id: book for _, book in self.result.imported if book.lookup is LookupOutcome.FAILED
+        }
+        return list(books.values())
 
     @property
     def first_book(self) -> Book | None:

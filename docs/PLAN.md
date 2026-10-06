@@ -7,14 +7,16 @@
 Skeleton first, in small milestones; each ends with a visual review by the
 user before the next starts.
 
-- **M9 Import in the background** — `Esc` to the browser while it runs,
-  footer progress, `i` reopens, summary opens on its own (IMPORT-5); one
-  writer per library: block `ctrl+r` and later edits while importing
-  (ADR-4); failed lookups (IMPORT-8, `Book.lookup`) and `l` on the summary
+- **M9 Import in the foreground** — background import deferred
+  2026-10-05 (ADR-10 amendment, FLOWS.md *Not yet*). `Esc` while running
+  hints that `x` stops (IMPORT-5); failed lookups (IMPORT-8, `Book.lookup`);
+  the import worker leaves the shared `exclusive` write group (ADR-10).
+  *Built 2026-10-06, awaiting review*
 - **M10 Edit and lookup** — design first (FLOWS.md Open questions): edit,
   look up and mark reviewed as one path for any book, judged against the
   hardest case, an imported book with little or no metadata; then build
-  EDIT-1..6, LOOKUP-1..3 and REVIEW-1. Replaces M8 Filters, dropped
+  EDIT-1..6, LOOKUP-1..3, REVIEW-1 and the summary's `l` (IMPORT-10),
+  all under one write guard (G-2). Replaces M8 Filters, dropped
   2026-10-03 (Status grouping covers the review queue; ADR-2 amended)
 - **M11 Reveal and copy** — BROWSE-11..13
 - **M12 UI polish** — from the M3 review: the title column takes too much
