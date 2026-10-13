@@ -14,7 +14,8 @@ user before the next starts.
   REVIEW-1/2 and the summary's `l` (IMPORT-10), all under one write guard
   (G-2). REMOVE-1..4 waits for bookman's API (inbox 2026-10-06).
   Replaces M8 Filters, dropped 2026-10-03 (Status grouping covers the
-  review queue; ADR-2 amended)
+  review queue; ADR-2 amended). *Built 2026-10-12 (REMOVE excepted),
+  awaiting review*
 - **M11 Reveal and copy** — BROWSE-11..13
 - **M12 UI polish** — from the M3 review: the title column takes too much
   width next to author and formats (rebalance, e.g. cap the title or share

@@ -303,7 +303,10 @@ everything new; `Enter` on the summary. One book from a folder of many: add
     **Skipped** (unsupported files, e.g. `.mobi`). Empty sections are
     omitted.
   - `l` looks up again the books imported without Open Library
-    (IMPORT-8), in the background like LOOKUP-1; `Enter`, or the
+    (IMPORT-8), in the background like LOOKUP-1, and returns to the
+    browser; one notification then says how many were updated ("Looked up
+    3 books · 2 updated"), or that Open Library still can't be reached.
+    `l` is offered only when there are such books. `Enter`, or the
     `Back to library ⏎` button that stays visible under the summary,
     returns to the browser with the first imported book selected. The
     library is reloaded either way.
@@ -400,7 +403,8 @@ Key budget: `l`.
   "Found a cover", "Identified by ISBN", "Author filled in"), judged by
   comparing the book before and after. If nothing changed: "No better match
   found". If Open Library can't be reached: "Open Library can't be
-  reached", and nothing changes.
+  reached", and nothing changes. With lookups turned off in bookman's
+  settings (`Config.offline`): "Lookups are off" [bookman 1.3.0 @ 1bdad64].
 - **LOOKUP-3** A reviewed book keeps its title, author and ISBN; only a
   missing cover or empty fields can be filled in (bookman's rule, stated so
   the user expects it). A reviewed book that the lookup matched still isn't

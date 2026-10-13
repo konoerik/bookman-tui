@@ -139,6 +139,7 @@ class ImportScreen(Screen):
         Binding("space", "noop", "Tick", show=False),  # footer hint for the list's own Space
         Binding("slash", "filter", "Filter", key_display="/", show=False),
         Binding("x", "stop", "Stop", show=False),
+        Binding("l", "look_up", "Look up again"),
         Binding("enter", "done", "Done"),
     ]
 
@@ -230,6 +231,9 @@ class ImportScreen(Screen):
             return stage is Stage.RUNNING and job is not None and not job.stopping
         if action == "done":
             return stage is Stage.SUMMARY
+        if action == "look_up":
+            job = self.app.import_job
+            return stage is Stage.SUMMARY and job is not None and bool(job.lookups_failed)
         return True
 
     # Path (IMPORT-1, IMPORT-2)
@@ -421,6 +425,14 @@ class ImportScreen(Screen):
 
     def action_done(self) -> None:
         self.app.close_import()
+
+    def action_look_up(self) -> None:
+        """`l`: back to the browser, looking up again the books imported
+        without Open Library (IMPORT-10, IMPORT-8)."""
+        job = self.app.import_job
+        books = job.lookups_failed if job is not None else []
+        self.app.close_import()
+        self.app.look_up(books, batch=True)
 
     @on(Button.Pressed, "#summary-done")
     def done_pressed(self) -> None:

@@ -3,6 +3,7 @@ search, sort and grouping."""
 
 from __future__ import annotations
 
+from bookman import Book
 from rich.markup import escape
 from textual import on
 from textual.app import ComposeResult
@@ -14,7 +15,8 @@ from textual.screen import Screen
 from textual.widgets import DataTable, Footer, Header, Input, Static
 
 from bookman_tui.screens.details import DetailsScreen
-from bookman_tui.store import Catalog, Grouping, Sort, arrange, match_summary
+from bookman_tui.screens.edit_dialog import EditDialog
+from bookman_tui.store import NEEDS_REVIEW, BookRow, Catalog, Grouping, Sort, arrange, match_summary, status_group
 from bookman_tui.widgets.book_detail import BookDetail
 from bookman_tui.widgets.book_table import BookTable
 
@@ -61,6 +63,9 @@ class BrowserScreen(Screen):
         Binding("o", "sort", "Sort"),
         Binding("g", "group", "Group"),
         Binding("i", "app.import_books", "Import"),
+        Binding("e", "edit", "Edit"),
+        Binding("l", "look_up", "Look up"),
+        Binding("v", "toggle_reviewed", "Reviewed"),
     ]
 
     selected_id: reactive[str | None] = reactive(None)
@@ -87,6 +92,7 @@ class BrowserScreen(Screen):
         self.watch(self.app, "search", self.show_search, init=False)
         self.watch(self.app, "sort", self.show_arrangement, init=False)
         self.watch(self.app, "grouping", self.show_arrangement, init=False)
+        self.watch(self.app, "looking_up", self.show_busy, init=False)
 
     def show_catalog(self, catalog: Catalog | None) -> None:
         """The books changed (load, reload or a write): a book that no longer
@@ -185,6 +191,56 @@ class BrowserScreen(Screen):
             self.selected_id = message.book_id
         catalog = self.app.catalog
         self.query_one(BookDetail).book = catalog.get(message.book_id) if catalog and message.book_id else None
+        self.show_busy()
+
+    def show_busy(self) -> None:
+        """"Looking up…" on the selected book while it's looked up (LOOKUP-1)."""
+        self.query_one(BookDetail).busy = self.selected_id in self.app.looking_up
+
+    @property
+    def selected_book(self) -> Book | None:
+        """The book the list shows as selected, current from the catalog;
+        None when nothing is listed (`selected_id` outlives a search that
+        matches nothing)."""
+        shown = self.query_one(BookDetail).book
+        catalog = self.app.catalog
+        return catalog.get(shown.id) if catalog and shown else None
+
+    def action_edit(self) -> None:
+        """`e`: the edit dialog for the selected book (EDIT-1)."""
+        book = self.selected_book
+        if book is not None and not self.app.refuse_if_busy():
+            self.app.push_screen(EditDialog(book))
+
+    def action_look_up(self) -> None:
+        """`l`: look the selected book up again (LOOKUP-1)."""
+        book = self.selected_book
+        if book is not None:
+            self.app.look_up([book])
+
+    def action_toggle_reviewed(self) -> None:
+        """`v`: reviewed on or off (REVIEW-1); working through the Needs
+        review group, the selection moves on to the next book (REVIEW-2)."""
+        book = self.selected_book
+        if book is not None:
+            self.app.toggle_reviewed(book, then_select=self._next_in_queue(book))
+
+    def _next_in_queue(self, book: Book) -> str | None:
+        """The book REVIEW-2 moves to when `book` leaves Needs review: the
+        next one listed there, else the previous; None if it's the only one
+        or the list isn't grouped by status."""
+        if self.app.grouping is not Grouping.STATUS or status_group(book) != NEEDS_REVIEW:
+            return None
+        books = self.app.catalog.search(self.app.search)
+        queue = [
+            row.book.id
+            for row in arrange(books, self.app.sort, self.app.grouping)
+            if isinstance(row, BookRow) and row.group == NEEDS_REVIEW
+        ]
+        if book.id not in queue or len(queue) == 1:
+            return None
+        index = queue.index(book.id)
+        return queue[index + 1] if index + 1 < len(queue) else queue[index - 1]
 
     def on_resize(self, event: Resize) -> None:
         self.set_class(event.size.width < NARROW, "narrow")
@@ -196,6 +252,8 @@ class BrowserScreen(Screen):
             return self.has_class("narrow") and self.query_one(BookDetail).book is not None
         if action in ("search", "sort", "group"):
             return bool(self.app.catalog)
+        if action in ("edit", "look_up", "toggle_reviewed"):
+            return self.selected_book is not None
         if action == "clear_search":
             return bool(self.app.search) or self.query_one("#search", Input).has_focus
         return True

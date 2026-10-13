@@ -110,6 +110,29 @@ def author_note(book: Book) -> str | None:
     return f"Open Library lists the author as {book.record_author}"
 
 
+def files_text(book: Book) -> str:
+    """One line per format, `EPUB  Dune.epub`, with bookman's advice in amber
+    under a format it couldn't read (BROWSE-3); markup."""
+    lines = []
+    for fmt in book.formats:
+        lines.append(f"{fmt.kind.name}  {escape(fmt.path.name)}")
+        if fmt.read_issue:
+            lines.append(f"[$warning]{escape(sentence(fmt.read_issue.advice))}.[/]")
+    return "\n".join(lines)
+
+
+def trust_text(book: Book) -> str:
+    """The trust line (`trust`) as markup: the mark and headline in green or
+    amber, then each reason, then the muted detail."""
+    status = trust(book)
+    colour = "$success" if status.mark == "✓" else "$warning"
+    lines = [f"[bold {colour}]{status.mark} {status.headline}[/]"]
+    lines += [f"· {reason}" for reason in status.reasons]
+    if status.detail:
+        lines.append(f"[dim]{status.detail}[/]")
+    return "\n".join(lines)
+
+
 def _spelling(name: str) -> str:
     return " ".join(re.sub(r"[.\s]+", " ", name.casefold()).split())
 
@@ -127,10 +150,13 @@ class BookDetail(Widget):
       `read_issue` gets its advice under it, sentence-cased, in amber
       (until bookman's short `ReadIssue.summary` lands)
 
+    While `busy`, "Looking up…" shows under the trust line (LOOKUP-1).
+
     Shows nothing when `book` is None (empty library or no selection).
     """
 
     book: reactive[Book | None] = reactive(None)
+    busy: reactive[bool] = reactive(False)
 
     def compose(self) -> ComposeResult:
         with VerticalScroll():
@@ -139,6 +165,7 @@ class BookDetail(Widget):
             yield Static("", id="detail-author")
             yield Static("", id="detail-isbn")
             yield Static("", id="detail-trust")
+            yield Static("Looking up…", id="detail-busy")
             yield Static("", id="detail-note")
             yield Static("Files", id="detail-files-heading")
             yield Static("", id="detail-files")
@@ -151,20 +178,12 @@ class BookDetail(Widget):
         self._set("#detail-title", book.title)
         self._set("#detail-author", book.author)
         self._set("#detail-isbn", f"ISBN {book.isbn}" if book.isbn else None)
-        status = trust(book)
-        colour = "$success" if status.mark == "✓" else "$warning"
-        lines = [f"[bold {colour}]{status.mark} {status.headline}[/]"]
-        lines += [f"· {reason}" for reason in status.reasons]
-        if status.detail:
-            lines.append(f"[dim]{status.detail}[/]")
-        self._set("#detail-trust", "\n".join(lines), markup=True)
+        self._set("#detail-trust", trust_text(book), markup=True)
         self._set("#detail-note", author_note(book))
-        files = []
-        for fmt in book.formats:
-            files.append(f"{fmt.kind.name}  {escape(fmt.path.name)}")
-            if fmt.read_issue:
-                files.append(f"[$warning]{escape(sentence(fmt.read_issue.advice))}.[/]")
-        self._set("#detail-files", "\n".join(files), markup=True)
+        self._set("#detail-files", files_text(book), markup=True)
+
+    def watch_busy(self, busy: bool) -> None:
+        self.query_one("#detail-busy").display = busy
 
     def _set(self, selector: str, text: str | None, *, markup: bool = False) -> None:
         static = self.query_one(selector, Static)

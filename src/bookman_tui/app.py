@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import os
+from copy import deepcopy
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from bookman import (
+    Book,
+    BookmanError,
     ConfigError,
     ImportEvent,
     Library,
@@ -24,6 +28,7 @@ from textual.reactive import reactive
 from textual.screen import Screen
 from textual.signal import Signal
 
+from bookman_tui.curating import batch_summary, could_help, lookup_summary
 from bookman_tui.importing import ImportJob
 from bookman_tui.location import display_path, header_text, not_found_reason, sentence
 from bookman_tui.prefs import Prefs, load_prefs, save_prefs
@@ -32,6 +37,9 @@ from bookman_tui.screens.import_screen import ImportScreen
 from bookman_tui.screens.setup import SetupScreen
 from bookman_tui.screens.start_problem import StartProblemScreen
 from bookman_tui.store import Catalog, Grouping, Sort
+
+if TYPE_CHECKING:
+    from bookman_tui.screens.edit_dialog import EditDialog
 
 
 def reload_summary(before: Catalog | None, after: Catalog) -> str:
@@ -67,6 +75,13 @@ class BookmanApp(App):
     grouping: reactive[Grouping] = reactive(Grouping.NONE)
     """The book list's grouping (BROWSE-9); remembered (BROWSE-10)."""
 
+    lookup_after_edit: reactive[bool] = reactive(True)
+    """"Look up after saving" in the edit dialog (EDIT-7); remembered."""
+
+    looking_up: reactive[frozenset[str]] = reactive(frozenset())
+    """Ids of the books a lookup is running for, shown as "looking up…"
+    (LOOKUP-1)."""
+
     def __init__(self, library: Path | None = None) -> None:
         super().__init__()
         self.library_arg = library
@@ -77,9 +92,13 @@ class BookmanApp(App):
         """The import running or just finished (ADR-10); None when there's none."""
         self.import_signal: Signal[ImportJob] = Signal(self, "import")
         """Published on every change to `import_job`, for the screens showing it."""
+        self.writing: str | None = None
+        """The change to the library running other than an import, as the
+        notice that refuses another (G-2): "Looking up “Dune”."."""
         prefs = load_prefs()
         self.set_reactive(BookmanApp.sort, prefs.sort)
         self.set_reactive(BookmanApp.grouping, prefs.grouping)
+        self.set_reactive(BookmanApp.lookup_after_edit, prefs.lookup_after_edit)
 
     def watch_sort(self) -> None:
         self._save_prefs()
@@ -87,10 +106,14 @@ class BookmanApp(App):
     def watch_grouping(self) -> None:
         self._save_prefs()
 
+    def watch_lookup_after_edit(self) -> None:
+        self._save_prefs()
+
     def _save_prefs(self) -> None:
-        """Remember the sort and grouping for the next session (BROWSE-10)."""
+        """Remember the sort, grouping and "Look up after saving" for the
+        next session (BROWSE-10, EDIT-7)."""
         try:
-            save_prefs(Prefs(sort=self.sort, grouping=self.grouping))
+            save_prefs(Prefs(sort=self.sort, grouping=self.grouping, lookup_after_edit=self.lookup_after_edit))
         except OSError as error:
             self.log.warning(f"prefs not saved: {error}")
 
@@ -202,6 +225,129 @@ class BookmanApp(App):
         """An import is running: the one write in progress (ADR-4, G-2)."""
         return self.import_job is not None and not self.import_job.finished
 
+    @property
+    def busy(self) -> str | None:
+        """What change to the library is running, as a notice (G-2), or None."""
+        if self.importing:
+            return "An import is running."
+        return self.writing
+
+    def refuse_if_busy(self) -> bool:
+        """Refuse another change while one runs, saying which (G-2)."""
+        if self.busy is None:
+            return False
+        self.notify(f"{self.busy} Try again when it's done.", severity="warning")
+        return True
+
+    def _begin(self, notice: str) -> None:
+        self.writing = notice
+
+    def _finish(self, book: Book | None, message: str | None = None, *, select: str | None = None) -> None:
+        """A change ended: put the book it returned in the catalog, keeping
+        the selection on it (G-3) unless `select` names another (REVIEW-2)."""
+        self.writing = None
+        self.looking_up = frozenset()
+        if book is not None and self.catalog is not None:
+            if select is not None and isinstance(self.screen, BrowserScreen):
+                self.screen.selected_id = select
+            self.catalog.replace(book)
+            self.catalog = self.catalog
+        if message:
+            self.notify(message)
+
+    # Edit (EDIT, ADR-11)
+
+    def save_edit(self, dialog: EditDialog, book: Book, changes: dict[str, str | None], lookup: bool) -> None:
+        """Save the dialog's `changes`, then look the book up if `lookup` and
+        it could help (EDIT-7, EDIT-8), as one change to the library."""
+        self._begin(f"Saving “{book.title}”.")
+        self.run_edit(dialog, book, changes, lookup)
+
+    @work(thread=True, group="write")
+    def run_edit(self, dialog: EditDialog, book: Book, changes: dict[str, str | None], lookup: bool) -> None:
+        assert self.library is not None
+        try:
+            edited = self.library.edit(deepcopy(book), **changes)
+        except BookmanError as error:
+            self.call_from_thread(self._edit_refused, dialog, error)
+            return
+        if not (lookup and could_help(edited)):
+            self.call_from_thread(self._edited, dialog, edited, "Saved")
+            return
+        self.call_from_thread(self._edited, dialog, edited, None)
+        after = self.library.reidentify(deepcopy(edited))
+        self.call_from_thread(self._finish, after, f"Saved · {lookup_summary(edited, after)}")
+
+    def _edit_refused(self, dialog: EditDialog, error: BookmanError) -> None:
+        """bookman refused the edit: say why in the dialog, which keeps
+        everything typed (EDIT-5, G-4)."""
+        self.writing = None
+        dialog.refused(error)
+
+    def _edited(self, dialog: EditDialog, book: Book, message: str | None) -> None:
+        """The edit is saved: close the dialog; a lookup may follow."""
+        dialog.dismiss(True)
+        if message is not None:
+            self._finish(book, message)
+            return
+        self.writing = f"Looking up “{book.title}”."
+        self.looking_up = frozenset({book.id})
+        if self.catalog is not None:
+            self.catalog.replace(book)
+            self.catalog = self.catalog
+
+    # Look up (LOOKUP, IMPORT-10)
+
+    def look_up(self, books: list[Book], *, batch: bool = False) -> None:
+        """Look `books` up again in the background (LOOKUP-1). One book is
+        reported by what changed (LOOKUP-2); a `batch` (IMPORT-10's `l`) by
+        how many were updated, however many it holds."""
+        if not books or self.refuse_if_busy():
+            return
+        what = f"“{books[0].title}”" if len(books) == 1 else f"{len(books)} books"
+        self._begin(f"Looking up {what}.")
+        self.looking_up = frozenset(book.id for book in books)
+        self.run_lookups(books, batch or len(books) > 1)
+
+    @work(thread=True, group="write")
+    def run_lookups(self, books: list[Book], batch: bool) -> None:
+        assert self.library is not None
+        results = []
+        for book in books:
+            after = self.library.reidentify(deepcopy(book))
+            results.append((book, after))
+            if batch:
+                self.call_from_thread(self._looked_up, after)
+        if not batch:
+            before, after = results[0]
+            self.call_from_thread(self._finish, after, lookup_summary(before, after))
+        else:
+            self.call_from_thread(self._finish, None, batch_summary(results))
+
+    def _looked_up(self, book: Book) -> None:
+        """One book of several is done: show it, the rest still running."""
+        self.looking_up = self.looking_up - {book.id}
+        if self.catalog is not None:
+            self.catalog.replace(book)
+            self.catalog = self.catalog
+
+    # Review (REVIEW)
+
+    def toggle_reviewed(self, book: Book, *, then_select: str | None = None) -> None:
+        """Mark `book` reviewed, or put it back in the queue (REVIEW-1);
+        `then_select` is where the selection goes if it leaves Needs
+        review (REVIEW-2)."""
+        if self.refuse_if_busy():
+            return
+        self._begin(f"Updating “{book.title}”.")
+        self.run_review(book, then_select)
+
+    @work(thread=True, group="write")
+    def run_review(self, book: Book, then_select: str | None) -> None:
+        assert self.library is not None
+        after = self.library.mark_reviewed(deepcopy(book), not book.reviewed)
+        self.call_from_thread(self._finish, after, None, select=then_select if after.reviewed else None)
+
     def action_import_books(self) -> None:
         """`i`: open the import screen (IMPORT-1)."""
         if self.library is not None and not isinstance(self.screen, ImportScreen):
@@ -209,8 +355,7 @@ class BookmanApp(App):
 
     def start_import(self, job: ImportJob) -> None:
         """Run `job` (ADR-10); the import screen follows it through the signal."""
-        if self.importing:
-            self.notify("An import is already running.", severity="warning")
+        if self.refuse_if_busy():
             return
         self.import_job = job
         self.import_signal.publish(job)

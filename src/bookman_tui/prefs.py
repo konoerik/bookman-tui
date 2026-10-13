@@ -30,10 +30,13 @@ class Prefs:
     Attributes:
         sort: The book list's order (BROWSE-8).
         grouping: The book list's grouping (BROWSE-9).
+        lookup_after_edit: "Look up after saving" in the edit dialog
+            (EDIT-7, ADR-11).
     """
 
     sort: Sort = Sort.TITLE
     grouping: Grouping = Grouping.NONE
+    lookup_after_edit: bool = True
 
 
 def prefs_path() -> Path:
@@ -67,6 +70,7 @@ def load_prefs(path: Path | None = None) -> Prefs:
     return Prefs(
         sort=_member(Sort, saved.get("sort"), Prefs.sort),
         grouping=_member(Grouping, saved.get("grouping"), Prefs.grouping),
+        lookup_after_edit=_flag(saved.get("lookup_after_edit"), Prefs.lookup_after_edit),
     )
 
 
@@ -79,7 +83,11 @@ def save_prefs(prefs: Prefs, path: Path | None = None) -> None:
     """
     target = path or prefs_path()
     target.parent.mkdir(parents=True, exist_ok=True)
-    data = {"sort": prefs.sort.value, "grouping": prefs.grouping.value}
+    data = {
+        "sort": prefs.sort.value,
+        "grouping": prefs.grouping.value,
+        "lookup_after_edit": prefs.lookup_after_edit,
+    }
     target.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
 
@@ -88,3 +96,7 @@ def _member(enum: type[_E], value: object, default: _E) -> _E:
         return enum(value)
     except ValueError:
         return default
+
+
+def _flag(value: object, default: bool) -> bool:
+    return value if isinstance(value, bool) else default
