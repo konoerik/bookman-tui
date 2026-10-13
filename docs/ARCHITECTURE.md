@@ -102,6 +102,15 @@
 **Consequences:** M9's background mode is the screen dismissed while the job carries on; the browser footer and `i` read the same job. The job is the single-writer state ADR-4 calls for, so write actions check it.
 **Amendment (2026-10-05):** Imports run in the foreground only; background mode (IMPORT-5) moved to FLOWS.md *Not yet*. With every write refused during an import (G-2) it buys only browsing, and it makes every later write path (edit, lookup, mark reviewed, reload) depend on the guard while the browser is live. The import screen covering the browser already keeps other writes out. The app-owned job stays, so background mode can be added later without rework. Separately, write workers don't share an `exclusive=True` group: Textual would mark a running import cancelled when another write worker starts, but a thread worker can't be stopped, so both would write. The guard (`App.importing`, later a general write state) decides what runs, not worker cancellation.
 
+### ADR-11: Book edits happen in a modal `EditDialog`; "Look up after saving" is a remembered pref
+**Date:** 2026-10-12
+**Context:** M10 had to turn edit, look up and mark reviewed into one path for any book, designed against the hardest case: an imported book whose file gave little or nothing and that wasn't found online. The edit surface had to work on narrow terminals, where the detail pane is hidden (BROWSE-7), make the editing state obvious, and respect one change at a time (G-2, ADR-4).
+**Decision:**
+- `e` pushes `EditDialog`, a `ModalScreen` over the dimmed browser: the book's context (files, `ReadIssue.advice`, the needs-review reasons), then title, author and ISBN, then a "Look up after saving" checkbox. Saving runs `edit`, then `reidentify` if the box is ticked and a lookup could help (EDIT-8), both in one thread worker as a single change under the write guard; one notification reports the result.
+- The checkbox state lives in the prefs file (ADR-9) beside sort and grouping: default on, remembered across edits and sessions.
+**Alternatives considered:** Editing in place in the detail pane (seamless, but a hidden editing mode in the browser that overloads `Esc`, and a second surface needed on narrow terminals); a book screen of its own (room for lookup results, more sources and covers, but too much for three fields; kept as the upgrade path in FLOWS.md *Not yet*); always looking up after saving (in the way offline and in a run of quick fixes, since the next edit is refused while a lookup holds the guard); an app setting for it (needs a settings screen, which ADR-8 holds back); queuing changes instead of refusing them (changes G-2; deferred). All three surfaces were tried as throwaway mockups.
+**Consequences:** The prefs file gains a field. A long lookup after a save blocks the next edit until it ends (G-2); the checkbox is the way around it. On a reviewed book a matching lookup isn't recorded as a match [bookman 1.3.0 @ 1bdad64] (inbox 2026-10-06), so LOOKUP-2 judges what changed by comparing the book before and after. REMOVE's confirmation reuses the dialog pattern.
+
 ## Detail
 
 ### App structure
