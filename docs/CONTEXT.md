@@ -1,8 +1,8 @@
 # Context
 <!-- Updated by /wrap at session end. Edit manually if needed. Keep it under 8 lines. -->
 
-**Current focus:** M10 done (REMOVE waits for bookman); M11 Reveal and copy next
-**Last session:** Closed M9 after review; designed M10 from three throwaway mockups (edit dialog chosen, sticky "Look up after saving", REVIEW-2, REMOVE pending bookman), recorded as ADR-11; filed bookman inbox requests (remove, candidates, unreadable books, match on a reviewed book)
-**Blocking:** None. A ticked subset loops `import_file` until bookman can import a list of files (inbox 2026-10-04)
-**Next action:** Start M11 (BROWSE-11..13)
-<!-- wrapped: 2026-10-06 -->
+**Current focus:** M11 Reveal and copy (BROWSE-11..13), not started
+**Last session:** Closed M9 and M10: M10 designed from three mockups (edit dialog, sticky "Look up after saving", REVIEW-2, REMOVE designed; ADR-11) and built; `Books/` test library gitignored
+**Blocking:** REMOVE-1..4 wait for bookman's remove API; also inbox: list import, lookup candidates, unreadable-book report, match on a reviewed book (2026-10-04/06)
+**Next action:** Start M11: `f` reveals the selected book in Finder, `c` copies its path (BROWSE-11..13)
+<!-- wrapped: 2026-10-13 -->
