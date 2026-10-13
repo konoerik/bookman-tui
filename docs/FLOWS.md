@@ -33,7 +33,8 @@ limits carry a `[bookman 1.3.0 @ 1bdad64]` tag; re-check them when the baseline 
   every other action that would change the library is refused with a notice
   saying what's in progress. Browsing and searching stay available (ADR-4).
 - **G-3** A book stays selected across any change to it, including a title
-  edit that renames its folder (ADR-3).
+  edit that renames its folder (ADR-3). Exceptions: a removed book
+  (REMOVE-3) and `v` working through the review queue (REVIEW-2).
 - **G-4** When bookman refuses something it expected to (a `BookmanError`),
   show its message in plain words in the context where it happened: inline in
   a form, otherwise as a notification. Nothing is lost; the user can correct
@@ -326,23 +327,46 @@ stateDiagram-v2
 
 *In short:* press `e` on a book to fix its title, author or ISBN. Saving
 marks the book as reviewed, so later imports won't overwrite your
-correction.
+correction, and then looks it up online with what you typed, unless you
+untick "Look up after saving".
 
 Key budget: `e`, edit the field, `Enter`.
 
-- **EDIT-1** A dialog with title, author and ISBN, filled with the current
-  values. Focus starts on title.
+Designed in M10 (2026-10-12) against the hardest case: a book whose file gave
+little or nothing and that wasn't found online. A dialog was chosen over
+editing in the detail pane (the pane is hidden on narrow terminals,
+BROWSE-7, and a dialog makes the editing state plain) and over a book screen
+(too much for three fields; the place for richer editing later, see
+*Not yet*).
+
+- **EDIT-1** `e` opens a dialog over the browser, which is dimmed behind it.
+  It shows first what helps work out what the book is: its file names,
+  bookman's advice for a file it couldn't read (`ReadIssue.advice`), and
+  why it needs review (BROWSE-3's reasons). Then title, author and ISBN,
+  filled with the current values, and a "Look up after saving" checkbox
+  (EDIT-7). Focus starts on title; `Tab` and `shift+tab` move between them.
 - **EDIT-2** When the source spelled the author differently
   (`record_author`), a button offers it: "Use Open Library's spelling: …".
-- **EDIT-3** `Enter` saves and `Esc` cancels. If nothing changed, Save just
-  closes: the book is **not** marked reviewed as a side effect.
+- **EDIT-3** `Enter` in any field saves, and `Esc` cancels. If nothing
+  changed, saving just closes: the book is **not** marked reviewed as a
+  side effect, and nothing is looked up.
 - **EDIT-4** Only changed fields are sent. An emptied author or ISBN field
   clears that field. An empty title is refused inline.
 - **EDIT-5** An invalid ISBN is refused inline. The dialog stays open with
   everything typed kept (G-4).
-- **EDIT-6** After saving, the book shows as reviewed, and a notification says
-  so. A title change renames its folder and files; the book stays selected
-  (G-3).
+- **EDIT-6** After saving, the book shows as reviewed. A title change
+  renames its folder and files; the book stays selected (G-3). One
+  notification reports the save and, when one ran, the lookup (LOOKUP-2):
+  "Saved", "Saved · Found a cover", "Saved · Open Library can't be
+  reached".
+- **EDIT-7** With "Look up after saving" ticked, saving goes on to look the
+  book up with the corrected fields (LOOKUP-1), as part of the same change
+  to the library (G-2). `Space` toggles it. It's ticked at first, and the
+  last choice is remembered for the next edit and the next session
+  (ADR-9), so a run of quick fixes can go without lookups.
+- **EDIT-8** The lookup only runs when it could help: the book wasn't
+  matched online, or it has no cover, author or ISBN. Otherwise a reviewed
+  book has nothing to gain (LOOKUP-3).
 
 ## REVIEW — Marking books reviewed
 
@@ -354,9 +378,12 @@ Key budget: `v`.
 
 - **REVIEW-1** `v` toggles reviewed on the selected book (`mark_reviewed`).
   Nothing else about the book changes.
-- **REVIEW-2** *Withdrawn with the review filter. Where the selection goes
-  when `v` moves a book out of the Needs review group (BROWSE-9) is part of
-  the edit-and-lookup design (see Open questions).*
+- **REVIEW-2** When grouped by Status (BROWSE-9) and `v` moves a book out of
+  Needs review, the selection moves to the next book in Needs review (the
+  previous one if it was the last), so the queue can be worked through one
+  key at a time. It stays on the moved book when Needs review is now empty.
+  This is the one exception to G-3; in every other case the selection
+  follows the book.
 
 ## LOOKUP — Re-identifying a book
 
@@ -368,14 +395,40 @@ Key budget: `l`.
 
 - **LOOKUP-1** `l` runs `reidentify` on the selected book in the background.
   The book shows as "looking up…" meanwhile. It counts as a change to the
-  library (G-2).
+  library (G-2). Saving an edit runs the same lookup (EDIT-7).
 - **LOOKUP-2** When it finishes, a notification says what changed (e.g.
   "Found a cover", "Identified by ISBN", "Author filled in"), judged by
   comparing the book before and after. If nothing changed: "No better match
-  found".
+  found". If Open Library can't be reached: "Open Library can't be
+  reached", and nothing changes.
 - **LOOKUP-3** A reviewed book keeps its title, author and ISBN; only a
   missing cover or empty fields can be filled in (bookman's rule, stated so
-  the user expects it).
+  the user expects it). A reviewed book that the lookup matched still isn't
+  recorded as matched online, so its status line keeps saying how it was
+  matched before [bookman 1.3.0 @ 1bdad64] (inbox 2026-10-06).
+
+## REMOVE — Removing a book
+
+*In short:* press `D` to remove the selected book from the library. You're
+asked first. Your original files, wherever you imported them from, are never
+touched.
+
+Key budget: `D`, then confirm.
+
+*Not built: waits for bookman to offer removing a book (inbox 2026-10-06;
+none in [bookman 1.3.0 @ 1bdad64]). Until then, delete the book's folder by
+hand and press `ctrl+r`.*
+
+- **REMOVE-1** `D` opens a confirmation naming the book, its folder and its
+  formats. Cancel has focus, so `Enter` alone removes nothing; `Esc`
+  cancels.
+- **REMOVE-2** Removing takes the whole book: its folder, every format and
+  its cover. Removing one format of a book waits for bookman (FEATURES K8).
+- **REMOVE-3** It counts as a change to the library (G-2). Afterwards the
+  selection moves to the nearest book (as BROWSE-5 does for a book that's
+  gone) and a notification names the book removed.
+- **REMOVE-4** For a book bookman couldn't read, whose advice is to delete it
+  and import it again (EDIT-1), `D` is that delete.
 
 ## SETTINGS — Configuration
 
@@ -412,6 +465,18 @@ otherwise. Each needs a flow here before it's built.
   default; whether to keep a list of recent libraries). Until then, use
   `--library DIR` or `$BOOKMAN_LIBRARY`. A library can be moved freely (see
   above), so no flow is needed for that.
+- Richer editing on a book screen of its own (the M10 alternative to the
+  EDIT dialog): choosing among lookup results when the match is wrong
+  (needs bookman, inbox 2026-10-06; FEATURES K5), more sources than Open
+  Library, and setting a cover by hand. A cover by hand is more likely a
+  link (a bookshop page) than an image file on disk, so it waits for more
+  sources; bookman's `set_cover` takes a local image
+  [bookman 1.3.0 @ 1bdad64]. Until then, a cover comes from Open Library
+  only (`l`).
+- Queuing changes instead of refusing them (G-2): an edit saved while a
+  lookup runs is refused until it finishes. Queuing would let a run of
+  edits go on while lookups catch up. Revisit if refusals get in the way;
+  "Look up after saving" (EDIT-7) is the answer for now.
 - Telling the user about books bookman can't read: `scan` skips a broken
   metadata.json without saying so [bookman 1.3.0 @ 1bdad64] (inbox
   2026-10-06).
@@ -446,37 +511,6 @@ otherwise. Each needs a flow here before it's built.
   be added later without rework.
 
 ## Open questions
-
-- **Editing and lookup as one path** (M10) EDIT, LOOKUP and REVIEW work on
-  any book, but are specified separately, not as one path: find the book,
-  fill in or correct its fields, then fetch online. The scenario to design
-  for is the hardest one: an imported book whose file gave little or
-  nothing and that wasn't found online (e.g. under Unknown author or Needs
-  review); if that path is smooth, a one-field fix on a good match is too.
-  To decide:
-  - unreadable files (`ReadIssue`): bookman names the book after its file
-    and advises deleting the folder and importing again
-    [bookman 1.3.0 @ 1bdad64]; is editing in place enough?
-  - after an edit adds an ISBN or fixes the title, does a lookup run on its
-    own, or does the dialog offer one, and does the path fit a key budget?
-  - removing a book (moved here from *Not yet* 2026-10-06): designed in
-    M10, built once bookman has the API (inbox 2026-10-06; today it means
-    deleting the book's folder by hand, then `ctrl+r`)
-    [bookman 1.3.0 @ 1bdad64]. It's also the fix bookman advises for an
-    unreadable file (`ReadIssue`). Whole book only, or one format of it
-    too? How is it confirmed, given there's no undo? (Asked bookman for
-    Trash rather than deletion.)
-  - the lookup picked the wrong book: choosing among candidates needs a
-    bookman API (inbox 2026-10-06; FEATURES K5); until then the fix is a
-    hand edit, then a lookup. Does the design leave room for a candidate
-    list?
-  - setting a cover by hand: bookman has `set_cover(book, image)`, which
-    marks the book reviewed, and `reidentify(book, replace_cover=True)` to
-    fetch the record's cover [bookman 1.3.0 @ 1bdad64]. No flow uses
-    either; does a picked image file belong in this path?
-  - REVIEW-2's replacement: with Status grouping, `v` moves the book to
-    "Checked by you" and the selection follows it (G-3); should it stay in
-    Needs review on the next book instead?
 
 - **BROWSE-8** Surname order needs an author sort key (in bookman's
   backlog) [bookman 1.3.0 @ 1bdad64].

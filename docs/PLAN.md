@@ -7,14 +7,14 @@
 Skeleton first, in small milestones; each ends with a visual review by the
 user before the next starts.
 
-- **M10 Edit and lookup** — design first (FLOWS.md Open questions): edit,
-  look up and mark reviewed as one path for any book, judged against the
-  hardest case, an imported book with little or no metadata; then build
-  EDIT-1..6, LOOKUP-1..3, REVIEW-1 and the summary's `l` (IMPORT-10),
-  all under one write guard (G-2). Removing a book is designed here too
-  (added 2026-10-06), and built once bookman has the API (inbox
-  2026-10-06). Replaces M8 Filters, dropped
-  2026-10-03 (Status grouping covers the review queue; ADR-2 amended)
+- **M10 Edit and lookup** — designed 2026-10-12 (FLOWS.md EDIT, REVIEW,
+  LOOKUP, REMOVE): an edit dialog with the book's context and a sticky
+  "Look up after saving" checkbox, chosen over editing in the pane or a
+  book screen (throwaway mockups). Build EDIT-1..8, LOOKUP-1..3,
+  REVIEW-1/2 and the summary's `l` (IMPORT-10), all under one write guard
+  (G-2). REMOVE-1..4 waits for bookman's API (inbox 2026-10-06).
+  Replaces M8 Filters, dropped 2026-10-03 (Status grouping covers the
+  review queue; ADR-2 amended)
 - **M11 Reveal and copy** — BROWSE-11..13
 - **M12 UI polish** — from the M3 review: the title column takes too much
   width next to author and formats (rebalance, e.g. cap the title or share
