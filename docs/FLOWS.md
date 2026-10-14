@@ -161,7 +161,9 @@ it: cover, author, ISBN, formats, and how sure bookman is about the match.
   (about 40 columns); the table takes the rest, and the title column gets the
   spare room. On a terminal too narrow for both (under about 100 columns) the
   pane is hidden and `Enter` opens the selected book's details as their own
-  screen; `Esc` returns to the list.
+  screen; `Esc` returns to the list. Widening the terminal while it's open
+  doesn't close it, so no screen changes under the user; `Esc` returns to
+  the list, which then shows the pane.
 - **BROWSE-8** `o` cycles the sort: Title → Author → Recently added. The
   status line names the sort and grouping in use: `340 books · 12 need
   review · by author · grouped by status` (the grouping part only when
@@ -182,15 +184,14 @@ it: cover, author, ISBN, formats, and how sure bookman is about the match.
   a header counts the matching books, and a group with none is left out.
 - **BROWSE-10** The sort and grouping last used are remembered for the next
   session.
-- **BROWSE-11** `f` shows the selected book in the system file manager
-  (Finder on macOS): its folder opens with the book's file selected where the
-  platform supports that, otherwise just the folder.
-- **BROWSE-12** `c` copies the selected book's file path to the clipboard,
-  and a notification confirms which file. A book with several formats asks
-  which one first (`1` EPUB, `2` PDF, …). The clipboard is written through
-  the terminal, so this also works over SSH, unlike BROWSE-11.
-- **BROWSE-13** BROWSE-11 and 12 only read the library, so they stay
-  available while a change to it runs, such as a lookup (G-2).
+- **BROWSE-11** `F` (shift+f) opens the selected book's folder in the
+  system file manager (Finder on macOS), which shows all its formats; open
+  one from there. A capital so that pressing `g` repeatedly can't hit it by
+  accident. Also on the narrow-terminal details screen (BROWSE-7). If the
+  folder is gone (moved or deleted by hand since the last load), a
+  notification says so and suggests `ctrl+r`. Key budget: `F`.
+- **BROWSE-13** BROWSE-11 only reads the library, so it stays available
+  while a change to it runs, such as a lookup (G-2).
 
 ## FIND — Search
 
@@ -462,7 +463,9 @@ otherwise. Each needs a flow here before it's built.
   where the TUI exposes the offline switch is undecided (*Open questions*).
 - Opening the book in the system's default reader (`Enter`, with a format
   choice when there are several). Chosen against for now in favour of
-  BROWSE-11/12. If added, `Enter` moves from narrow-terminal details
+  BROWSE-11: a reader is an outside app we can't watch (it may be slow to
+  start, steal focus or ask which app to use), and Apple Books, the macOS
+  default for EPUB, imports a copy into its own library. If added, `Enter` moves from narrow-terminal details
   (BROWSE-7) to opening, and details move to `d`.
 - Switching libraries from inside the TUI, as a first-class feature of its
   own rather than a setting (open another library for a look vs. change the
@@ -513,6 +516,26 @@ otherwise. Each needs a flow here before it's built.
   browsing, and it makes every later write path (edit, lookup, mark
   reviewed, reload) depend on the guard. The app-owned job (ADR-10) lets it
   be added later without rework.
+
+- Copying a book's file path (was BROWSE-12, M11): `c`, with a format
+  choice when there are several. Dropped on 2026-10-13: BROWSE-11 opens the
+  folder, and a path mostly helps shell or SSH use, which is not the
+  priority (the app is local-first). If added, copy the folder path: one
+  key, no format choice. A natural home is the toolbar below.
+- A small toolbar in the details pane for rare actions: open folder
+  (BROWSE-11), copy path, remove (REMOVE). It would make these easy to find
+  without spending keys. To settle in a design pass with mockups: icons
+  render at different widths across terminals and fonts (plain symbols or
+  short labels may be safer), with `tooltip` text on hover; buttons need
+  `Tab` presses, so frequent actions keep a key; the pane is hidden on
+  narrow terminals (BROWSE-7), so it would sit on the details screen there;
+  remove needs its REMOVE confirmation and distance from the harmless
+  buttons.
+- A richer details screen of its own, beside the pane used for browsing: a
+  summary of the book from online sources and fields of the user's own,
+  such as notes. bookman's `Book` has neither a description nor a notes
+  field [bookman 1.3.0 @ 1bdad64], so both need bookman first. Notes
+  overlap with EDIT, which a design pass would settle.
 
 ## Open questions
 

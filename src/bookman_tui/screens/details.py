@@ -20,7 +20,10 @@ class DetailsScreen(Screen):
     until `Esc`: no screen changes under the user.
     """
 
-    BINDINGS = [Binding("escape", "app.pop_screen", "Back")]
+    BINDINGS = [
+        Binding("escape", "app.pop_screen", "Back"),
+        Binding("F", "show_folder", "Folder"),
+    ]
 
     def __init__(self, book: Book) -> None:
         super().__init__()
@@ -35,3 +38,7 @@ class DetailsScreen(Screen):
         detail = self.query_one(BookDetail)
         detail.border_title = "Details"
         detail.book = self.book
+
+    def action_show_folder(self) -> None:
+        """`F`: this book's folder in the file manager (BROWSE-11)."""
+        self.app.show_folder(self.book)

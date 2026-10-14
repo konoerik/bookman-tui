@@ -66,6 +66,7 @@ class BrowserScreen(Screen):
         Binding("e", "edit", "Edit"),
         Binding("l", "look_up", "Look up"),
         Binding("v", "toggle_reviewed", "Reviewed"),
+        Binding("F", "show_folder", "Folder"),
     ]
 
     selected_id: reactive[str | None] = reactive(None)
@@ -225,6 +226,12 @@ class BrowserScreen(Screen):
         if book is not None:
             self.app.toggle_reviewed(book, then_select=self._next_in_queue(book))
 
+    def action_show_folder(self) -> None:
+        """`F`: the selected book's folder in the file manager (BROWSE-11)."""
+        book = self.selected_book
+        if book is not None:
+            self.app.show_folder(book)
+
     def _next_in_queue(self, book: Book) -> str | None:
         """The book REVIEW-2 moves to when `book` leaves Needs review: the
         next one listed there, else the previous; None if it's the only one
@@ -252,7 +259,7 @@ class BrowserScreen(Screen):
             return self.has_class("narrow") and self.query_one(BookDetail).book is not None
         if action in ("search", "sort", "group"):
             return bool(self.app.catalog)
-        if action in ("edit", "look_up", "toggle_reviewed"):
+        if action in ("edit", "look_up", "toggle_reviewed", "show_folder"):
             return self.selected_book is not None
         if action == "clear_search":
             return bool(self.app.search) or self.query_one("#search", Input).has_focus

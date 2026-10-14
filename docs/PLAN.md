@@ -7,7 +7,8 @@
 Skeleton first, in small milestones; each ends with a visual review by the
 user before the next starts.
 
-- **M11 Reveal and copy** — BROWSE-11..13
+- **M11 Open folder** — BROWSE-11, 13 (`F`; copy path moved to *Not yet*
+  2026-10-13). Built, awaiting visual review
 - **M12 UI polish** — from the M3 review: the title column takes too much
   width next to author and formats (rebalance, e.g. cap the title or share
   spare width); the plain table look (stripes, header, colours) once the

@@ -28,6 +28,7 @@ from textual.reactive import reactive
 from textual.screen import Screen
 from textual.signal import Signal
 
+from bookman_tui import reveal
 from bookman_tui.curating import batch_summary, could_help, lookup_summary
 from bookman_tui.importing import ImportJob
 from bookman_tui.location import display_path, header_text, not_found_reason, sentence
@@ -347,6 +348,24 @@ class BookmanApp(App):
         assert self.library is not None
         after = self.library.mark_reviewed(deepcopy(book), not book.reviewed)
         self.call_from_thread(self._finish, after, None, select=then_select if after.reviewed else None)
+
+    # Folder (BROWSE-11)
+
+    def show_folder(self, book: Book) -> None:
+        """Open `book`'s folder in the file manager (BROWSE-11). Only reads
+        the library, so no guard (BROWSE-13)."""
+        folder = book.directory
+        if folder is None or not folder.is_dir():
+            self.notify(f"“{book.title}”'s folder is gone. ctrl+r reloads the library.", severity="warning")
+            return
+        self.run_open_folder(folder)
+
+    @work(thread=True, group="reveal")
+    def run_open_folder(self, folder: Path) -> None:
+        try:
+            reveal.open_folder(folder)
+        except OSError as error:
+            self.call_from_thread(self.notify, f"Couldn't open the folder: {error}", severity="error")
 
     def action_import_books(self) -> None:
         """`i`: open the import screen (IMPORT-1)."""
