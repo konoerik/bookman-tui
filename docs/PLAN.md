@@ -7,8 +7,6 @@
 Skeleton first, in small milestones; each ends with a visual review by the
 user before the next starts.
 
-- **M11 Open folder** — BROWSE-11, 13 (`F`; copy path moved to *Not yet*
-  2026-10-13). Built, awaiting visual review
 - **M12 UI polish** — from the M3 review: the title column takes too much
   width next to author and formats (rebalance, e.g. cap the title or share
   spare width); the plain table look (stripes, header, colours) once the
@@ -66,3 +64,8 @@ user before the next starts.
   Replaces M8 Filters, dropped 2026-10-03 (Status grouping covers the
   review queue; ADR-2 amended). *Done, approved 2026-10-12 (REMOVE
   excepted, waits for bookman)*
+- **M11 Open folder** — BROWSE-11, 13: `F` opens the selected book's
+  folder in the file manager, also from the narrow details screen and
+  while a change runs. Was "Reveal and copy": copy path (BROWSE-12) moved
+  to *Not yet* 2026-10-13 with a details toolbar and a richer details
+  screen to explore. *Done, approved 2026-10-14*
