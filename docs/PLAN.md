@@ -7,10 +7,28 @@
 Skeleton first, in small milestones; each ends with a visual review by the
 user before the next starts.
 
+**M13 First push to GitHub** (`git@github.com:konoerik/bookman-tui.git`,
+empty). Decided 2026-10-17: depend on bookman by git URL pinned to a tag
+(PyPI's `bookman` is an unrelated bookmarks tool; rename filed to inbox);
+keep all claudify and docs files tracked.
+- [x] Dependency: `bookman @ git+https://github.com/konoerik/bookman.git@v1.3.0`,
+  relocked. A path source can't stay (the lock keeps `../bookman`, clones
+  fail), so `make … BOOKMAN=local` overlays the checkout
+- [x] Verify a clean copy with no `../bookman`: `uv sync`, `uv run pytest`
+  (209 passed), `uv tool install .`; recheck `uv tool install git+…` after push
+- [x] README: what it is, install, dev setup beside bookman, running,
+  `make try-*`
+- [x] MIT LICENSE; `pyproject.toml` license and project URLs
+- [x] CLAUDE.md: describe the new dependency setup
+- [x] Add `origin`, push `main`, tag `v1.0.0` (version 1.0.0; small feature updates bump minor)
+
 
 ## Backlog
 <!-- Accepted but not yet active. Load this section only when planning or prioritizing. -->
 
+- **CI** (low) — from M13 (2026-10-17): GitHub Actions running `uv sync`
+  + `uv run pytest` on Python 3.10 and latest; also catches bookman
+  git-dependency breakage
 - **Import screen revisit** (low) — from M12 (2026-10-16): fine for now,
   but on short terminals (about 20 rows) the "Include subfolders" checkbox
   drops below the panel, and a merged path + live preview screen was

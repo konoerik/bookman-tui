@@ -7,8 +7,15 @@ edits, re-identification). All library behaviour lives in bookman; this app is
 presentation and interaction only.
 
 ### bookman dependency
-- Installed as an **editable path dependency** (`[tool.uv.sources]` → `../bookman`),
-  so library changes are picked up without reinstalling
+- Installed from **git, pinned to a release tag**
+  (`bookman @ git+https://github.com/konoerik/bookman.git@vX.Y.Z` in
+  `pyproject.toml`; `uv.lock` pins the commit). Not on PyPI, and PyPI's
+  `bookman` is an unrelated package — never depend on a bare `bookman`
+- To pick up a new bookman release: bump the tag, `uv lock`, re-check stamps
+  (see below)
+- To work against unreleased changes in the `../bookman` checkout, run any
+  make target with `BOOKMAN=local` (`uv run --with-editable ../bookman …`);
+  never commit a path source for bookman
 - Import **only** from bookman's public API — the names in `bookman.__all__`
   (`from bookman import Library, Book, ...`). Never import `bookman.library`,
   `bookman.storage`, `bookman.identify` etc. directly, and never shell out to or
@@ -22,9 +29,10 @@ presentation and interaction only.
   or inbox entries about bookman's API or a limitation carries the version and
   short hash it was checked against, e.g. `[bookman 1.1.0 @ fe2c525]`. Docs
   also state their overall baseline at the top
-- **Re-checking a baseline:** compare the stamped hash with the current one
-  (`git -C ../bookman log -1 --format=%h`, `git -C ../bookman describe --tags`);
-  if they differ, `git -C ../bookman diff <stamped>..HEAD -- src/bookman CHANGELOG.md`
+- **Re-checking a baseline:** compare the stamped hash with the pinned tag
+  (`git -C ../bookman rev-parse --short <tag>`; `HEAD` when working with
+  `BOOKMAN=local`); if they differ,
+  `git -C ../bookman diff <stamped>..<tag> -- src/bookman CHANGELOG.md`
   shows what moved, then re-verify the stamped claims and update their stamps
 
 ## Tech Stack

@@ -1,7 +1,7 @@
 # Architecture
 
 ## Quick Reference
-**Stack:** Python 3.10+, Textual, bookman (editable path dependency, `../bookman`)
+**Stack:** Python 3.10+, Textual, bookman (git dependency pinned to a release tag; `make … BOOKMAN=local` for the `../bookman` checkout)
 **bookman baseline:** 1.3.0 @ `1bdad64` — bookman API claims below were checked against this; see CLAUDE.md for re-checking
 **Entry point:** `src/bookman_tui/app.py` (`BookmanApp`); console script `bookman-tui` → `bookman_tui:main`
 **Key paths:** `src/bookman_tui/screens/`, `src/bookman_tui/widgets/`, `src/bookman_tui/app.tcss`; `tools/mock_library.py` (dev only: builds a mock library through bookman's public API with a scripted `MetadataSource`, used by `make try-mock` and the test fixtures)
@@ -110,6 +110,25 @@
 - The checkbox state lives in the prefs file (ADR-9) beside sort and grouping: default on, remembered across edits and sessions.
 **Alternatives considered:** Editing in place in the detail pane (seamless, but a hidden editing mode in the browser that overloads `Esc`, and a second surface needed on narrow terminals); a book screen of its own (room for lookup results, more sources and covers, but too much for three fields; kept as the upgrade path in FLOWS.md *Not yet*); always looking up after saving (in the way offline and in a run of quick fixes, since the next edit is refused while a lookup holds the guard); an app setting for it (needs a settings screen, which ADR-8 holds back); queuing changes instead of refusing them (changes G-2; deferred). All three surfaces were tried as throwaway mockups.
 **Consequences:** The prefs file gains a field. A long lookup after a save blocks the next edit until it ends (G-2); the checkbox is the way around it. On a reviewed book a matching lookup isn't recorded as a match [bookman 1.3.0 @ 1bdad64] (inbox 2026-10-06), so LOOKUP-2 judges what changed by comparing the book before and after. REMOVE's confirmation reuses the dialog pattern.
+
+### ADR-12: bookman is a git dependency pinned to a release tag; `BOOKMAN=local` uses the checkout
+**Date:** 2026-10-17
+**Context:** Until now, bookman was installed from the local `../bookman` folder as an editable dependency. That works only on a machine where both repos sit side by side. Once bookman-tui is pushed to GitHub (M13), anyone cloning it has no `../bookman`, and `uv.lock` records that path, so `uv sync` and `uv tool install` both fail. bookman isn't on PyPI, and the PyPI name `bookman` belongs to an unrelated bookmarks tool (v0.5), so a bare `bookman` requirement would install the wrong package outside uv.
+**Decision:**
+- `pyproject.toml` depends on `bookman @ git+https://github.com/konoerik/bookman.git@v1.3.0`, and `uv.lock` pins the commit (`1bdad64`). There is no `[tool.uv.sources]` entry for bookman.
+- Plain `uv run pytest` and `make` targets run against the pinned release, which is what users get. Moving to a new bookman release means changing the tag, running `uv lock`, and re-checking the version stamps against the new tag.
+- `make <target> BOOKMAN=local` runs any target with `uv run --with-editable ../bookman` (`BOOKMAN_DIR` picks a different checkout) to work against unreleased bookman changes.
+
+**Alternatives considered:**
+- Keeping the editable path dependency and telling other people to use `--no-sources`: fresh clones fail by default, and the lock file holds your local path.
+- Keeping both the path dependency and the git URL: uv accepts this, but the lock still records `../bookman`, so clones fail all the same.
+- Renaming bookman's install name to `bookman-lib` and publishing it on PyPI: only needed for a PyPI release of bookman-tui, since PyPI rejects git-URL dependencies. This was filed to bookman's inbox (2026-10-17) and isn't needed now.
+
+**Consequences:**
+- bookman changes no longer reach bookman-tui automatically. You have to bump the tag or use `BOOKMAN=local`.
+- Tests prove compatibility with the pinned tag only. A planned CI job (Backlog) would also catch breakage from a new bookman tag.
+- Installing needs network access to GitHub.
+- Publishing bookman-tui to PyPI depends on bookman reaching PyPI first, under a free name.
 
 ## Detail
 
