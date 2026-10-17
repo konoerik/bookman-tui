@@ -7,19 +7,6 @@
 Skeleton first, in small milestones; each ends with a visual review by the
 user before the next starts.
 
-- **M12 UI polish** — built, awaiting the user's visual review and commit:
-  - [x] Column widths (BROWSE-1/7): title and author share about 2:1,
-    formats never cut; fixed Formats clipping at 100 columns
-  - [x] "Include subfolders" (IMPORT-1): `ctrl+s` toggles it from the path,
-    checkbox under the hint; dot-folders left out (IMPORT-3, inbox
-    2026-10-14). A preview toggle was tried and dropped
-  - [x] Details layout (BROWSE-3/7): cover shrinks on short terminals, left
-    out under 8 rows; details screen puts cover and details side by side
-  - [x] Hint voice (G-7): "Press `x` to …" in sentences, footer-style key
-    lists, keys drawn as the footer draws them, footer says `Esc`/`ctrl+r`
-  - [x] Table look: reviewed stripes and an accent header on 2026-10-16;
-    kept as it is
-
 
 ## Backlog
 <!-- Accepted but not yet active. Load this section only when planning or prioritizing. -->
@@ -74,3 +61,9 @@ user before the next starts.
   while a change runs. Was "Reveal and copy": copy path (BROWSE-12) moved
   to *Not yet* 2026-10-13 with a details toolbar and a richer details
   screen to explore. *Done, approved 2026-10-14*
+- **M12 UI polish** — column widths share about 2:1, formats never cut
+  (BROWSE-1/7); `ctrl+s` "Include subfolders" with dot-folders left out
+  (IMPORT-1/3; a preview toggle was tried and dropped); the cover shrinks
+  or goes on short views and sits beside the details from 60 columns
+  (BROWSE-3/7); hint voice "Press `x` to …" with footer-drawn keys (G-7);
+  table look kept as it is. *Done, approved 2026-10-16*
