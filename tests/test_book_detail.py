@@ -12,7 +12,15 @@ from textual.widgets import Static
 from bookman_tui.app import BookmanApp
 from bookman_tui.screens.browser import BrowserScreen
 from bookman_tui.screens.details import DetailsScreen
-from bookman_tui.widgets.book_detail import BookDetail, Trust, author_note, trust
+from bookman_tui.widgets.book_detail import (
+    COVER_MIN,
+    COVER_ROWS,
+    BookDetail,
+    Trust,
+    author_note,
+    cover_size,
+    trust,
+)
 from bookman_tui.widgets.book_table import BookTable
 from bookman_tui.widgets.cover import Cover
 
@@ -177,6 +185,51 @@ async def test_browse_3_pane_follows_the_cursor(mock_root: Path) -> None:
         await run.__aexit__(None, None, None)
 
 
+def test_browse_3_cover_full_size_with_room_and_4_to_3_in_cells() -> None:
+    assert cover_size(60, side_by_side=False) == (28, COVER_ROWS)
+    assert cover_size(26, side_by_side=False) == (16, 12)
+
+
+def test_browse_3_cover_left_out_when_too_small() -> None:
+    assert cover_size(20, side_by_side=False) is None
+    assert cover_size(COVER_MIN - 1, side_by_side=True) is None
+    assert cover_size(COVER_MIN, side_by_side=True) is not None
+
+
+async def test_browse_3_short_pane_shrinks_the_cover_and_keeps_the_details_in_view(mock_root: Path) -> None:
+    app, run, pilot = await open_on(mock_root, "Dune", size=(130, 32))
+    try:
+        detail = app.screen.query_one(BookDetail)
+        cover = detail.query_one(Cover)
+        assert COVER_MIN <= cover.size.height < COVER_ROWS
+        assert detail.query_one("#detail-files").region.bottom <= detail.region.bottom
+    finally:
+        await run.__aexit__(None, None, None)
+
+
+async def test_browse_3_cover_same_size_for_every_book(mock_root: Path) -> None:
+    app, run, pilot = await open_on(mock_root, "Dune", size=(130, 32))
+    try:
+        cover = app.screen.query_one(Cover)
+        sizes = set()
+        for _ in range(6):
+            sizes.add(cover.size)
+            await pilot.press("j")
+            await pilot.pause()
+        assert len(sizes) == 1
+    finally:
+        await run.__aexit__(None, None, None)
+
+
+async def test_browse_3_very_short_pane_leaves_the_cover_out(mock_root: Path) -> None:
+    app, run, pilot = await open_on(mock_root, "Dune", size=(130, 22))
+    try:
+        assert not app.screen.query_one(Cover).display
+        assert "Dune" in pane_text(app.screen)
+    finally:
+        await run.__aexit__(None, None, None)
+
+
 # --- narrow terminals (BROWSE-7) --------------------------------------------
 
 
@@ -225,5 +278,29 @@ async def test_browse_7_escape_returns_with_the_same_book_selected(mock_root: Pa
         assert isinstance(app.screen, BrowserScreen)
         selected = app.screen.query_one(BookTable).selected_id
         assert app.catalog is not None and app.catalog.get(selected).title == "Dune"
+    finally:
+        await run.__aexit__(None, None, None)
+
+
+async def test_browse_7_details_screen_puts_the_cover_beside_the_details(mock_root: Path) -> None:
+    app, run, pilot = await open_on(mock_root, "Dune", size=(90, 30))
+    try:
+        await pilot.press("enter")
+        await pilot.pause()
+        cover = app.screen.query_one(Cover)
+        text = app.screen.query_one("#detail-text")
+        assert text.region.x >= cover.region.right and text.region.y == cover.region.y
+    finally:
+        await run.__aexit__(None, None, None)
+
+
+async def test_browse_7_details_screen_stacks_when_too_narrow_for_both(mock_root: Path) -> None:
+    app, run, pilot = await open_on(mock_root, "Dune", size=(50, 40))
+    try:
+        await pilot.press("enter")
+        await pilot.pause()
+        cover = app.screen.query_one(Cover)
+        text = app.screen.query_one("#detail-text")
+        assert text.region.y >= cover.region.bottom
     finally:
         await run.__aexit__(None, None, None)

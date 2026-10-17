@@ -44,6 +44,15 @@ limits carry a `[bookman 1.3.0 @ 1bdad64]` tag; re-check them when the baseline 
   import is running (G-2); stop it first with `x` on the import screen
   (IMPORT-6).
 - **G-6** `?` shows the keys available on the current screen.
+- **G-7** Hints and notifications write keys one way, so a single letter
+  reads as a key and not a word. A key is drawn as the footer draws it
+  (bold, in the accent colour) and spelled as the footer spells it:
+  `Enter`, `Esc`, `Tab`, `Space`, `ctrl+r`, and letters as typed (`i`,
+  `x`, `F`). The footer says `Esc` and `ctrl+r`, not Textual's `esc` and
+  `^r`. In a sentence a key is pressed: "Press `Enter` to create it",
+  "Press `Enter` again to create ~/Books". A line listing several keys
+  pairs each with its action, most likely first, as the footer does:
+  "`Enter` Import 3 files · `Space` Tick · `a` Tick all · `/` Filter".
 
 ---
 
@@ -99,7 +108,7 @@ the name first.
 - **SETUP-4** If the path names an existing file rather than a folder, or
   can't be created, the error shows inline and nothing is saved.
 - **SETUP-5** An existing bookman library is recognised as the path is
-  typed ("Existing library: `Enter` opens it") and opened without a
+  typed ("Existing library … Press `Enter` to open it") and opened without a
   confirmation. Any other folder that already has something in it (hidden
   files aside) is refused inline: "A library needs an empty folder: bookman
   fills it with its own copies of your books. Choose a new or empty folder,
@@ -125,11 +134,23 @@ it: cover, author, ISBN, formats, and how sure bookman is about the match.
 
 - **BROWSE-1** The table shows title, author, formats (e.g. `EPUB PDF`), and a
   marker on books that need review. Ordered by title, ignoring a leading
-  "The", "A" or "An" (*The Hobbit* sorts under H).
+  "The", "A" or "An" (*The Hobbit* sorts under H). Column widths:
+  - formats is never cut; it's as wide as the longest list of formats
+  - title and author share the rest about 2:1, but neither gets more than
+    its longest entry needs while the other could use it. Room nobody needs
+    goes to the title, so rows fill the table
+  - on a narrow table the author gives way first, down to about 10 columns,
+    then the title down to about 20; below that the table scrolls sideways
+  - a cut title or author ends in "…"
 - **BROWSE-2** Up/down (and `j`/`k`) move the selection. The detail pane
   follows it.
 - **BROWSE-3** The detail pane shows:
-  - the cover, or a placeholder if there's none or it can't be drawn (ADR-5)
+  - the cover, or a placeholder if there's none or it can't be drawn (ADR-5).
+    On a short terminal the cover shrinks, keeping its proportions, so the
+    details under it stay in view; it's sized for the room, not the book,
+    so it's the same size for every book and nothing jumps as the selection
+    moves. When it would be too small to recognise (under about 8 rows) it's
+    left out. Only details longer than usual then need scrolling
   - title, author, ISBN
   - the formats; a format bookman couldn't read shows its advice sentence
     (`ReadIssue.advice`)
@@ -155,13 +176,15 @@ it: cover, author, ISBN, formats, and how sure bookman is about the match.
   the nearest book if the selected one is gone. When the reload finishes, a
   notification confirms it with the count and what changed: "Reloaded · 31
   books", or "Reloaded · 33 books (2 new, 1 gone)".
-- **BROWSE-6** An empty library shows "No books yet — press `i` to import"
+- **BROWSE-6** An empty library shows "No books yet. Press `i` to import some."
   instead of an empty table.
 - **BROWSE-7** The detail pane sits right of the table at a fixed width
-  (about 40 columns); the table takes the rest, and the title column gets the
-  spare room. On a terminal too narrow for both (under about 100 columns) the
+  (about 40 columns); the table takes the rest, shared out as BROWSE-1 says.
+  On a terminal too narrow for both (under about 100 columns) the
   pane is hidden and `Enter` opens the selected book's details as their own
-  screen; `Esc` returns to the list. Widening the terminal while it's open
+  screen; `Esc` returns to the list. That screen uses its width: the cover
+  on the left and the details beside it, once there's room for both (about
+  60 columns); narrower, they stack as in the pane. Widening the terminal while it's open
   doesn't close it, so no screen changes under the user; `Esc` returns to
   the list, which then shows the pane.
 - **BROWSE-8** `o` cycles the sort: Title → Author → Recently added. The
@@ -234,15 +257,17 @@ changed, and importing the same folder again only brings in what's missing.
 
 Key budget: `i`, type or tab-complete the path, `Enter`, `Enter` to import
 everything new; `Enter` on the summary. One book from a folder of many: add
-`a`, `/` + name, `Space`.
+`a`, `/` + name, `Space`. Including subfolders: add `ctrl+s` on the path.
 
 - **IMPORT-1** Path input with tab completion: `Tab` completes the longest
   unambiguous part, and a second `Tab` lists the choices. It's pre-filled
   with the current folder and a trailing `/` (home shown as `~`), so a typed
   name visibly lands inside it; the hint line names the full path. `~` is
   expanded and a relative path is taken from the current folder.
-  An "include subfolders" toggle (off by default, as in bookman) applies to
-  folders.
+  An "Include subfolders" checkbox under the hint line (off by default, as
+  in bookman) applies to folders. `ctrl+s` toggles it while typing the
+  path: `Tab` completes the path, so focus can't reach the checkbox
+  without the mouse.
 - **IMPORT-2** A path that doesn't exist, or an unsupported single file, is an
   inline error. Nothing starts. A single supported file skips the preview
   (IMPORT-3) and starts at once, unless the library already holds it: then
@@ -258,9 +283,16 @@ everything new; `Enter` on the summary. One book from a folder of many: add
   - `Space` toggles the selected file, `a` ticks or unticks all new files,
     `/` filters the list by file name. The filter only changes what's
     shown: ticks on hidden files stay, `Enter` still imports every ticked
-    file, and while ticked files are hidden the hint says how many ("Enter
-    imports 34 files, 33 hidden by the filter")
-  - `Enter` imports the ticked files ("Enter import 180"); nothing ticked,
+    file, and while ticked files are hidden the hint says how many ("`Enter`
+    Import 34 files (33 hidden by the filter)")
+  - files and folders whose name starts with `.` (such as `.DS_Store` or
+    `.git`; most systems hide them) are left out, with everything inside
+    such a folder, from the list and the import. bookman leaves out those
+    files but not the contents of such folders [bookman 1.3.0 @ 1bdad64],
+    so when subfolders are included and a dot-folder holds files, the TUI
+    imports the listed files itself (as for a subset) rather than handing
+    bookman the folder
+  - `Enter` imports the ticked files ("`Enter` Import 180 files"); nothing ticked,
     nothing starts. `Esc` goes back to the path.
 
   *Already in library* comes from bookman's content check

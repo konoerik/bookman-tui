@@ -7,10 +7,11 @@ from pathlib import Path
 import pytest
 from bookman import Config, Library, LookupOutcome, MetadataSourceError, NullSource, save_config
 from mock_library import Spec, isbn13, write_epub, write_pdf
-from textual.widgets import Input, Static
+from textual.content import Content
+from textual.widgets import Checkbox, Input, Static
 
 from bookman_tui.app import BookmanApp
-from bookman_tui.importing import ImportJob, Mark, survey
+from bookman_tui.importing import ImportJob, Mark, files_in_dot_folders, folder_files, survey
 from bookman_tui.location import display_path
 from bookman_tui.screens.browser import BrowserScreen
 from bookman_tui.screens.import_screen import ImportScreen, PreviewList, Stage
@@ -86,9 +87,9 @@ async def test_import_1_path_is_prefilled_with_the_current_folder(
         field = screen.query_one("#import-path", Input)
         assert field.value == f"{display_path(downloads.parent)}/"
         assert field.cursor_position == len(field.value)
-        assert text(screen, "#import-hint").startswith(f"Folder {display_path(downloads.parent)}:")
+        assert text(screen, "#import-hint").startswith(f"Folder {display_path(downloads.parent)}. ")
         await pilot.press(*"downloads")
-        assert text(screen, "#import-hint") == f"Folder {display_path(downloads)}: Enter shows what's in it."
+        assert text(screen, "#import-hint") == f"Folder {display_path(downloads)}. Press Enter to see what's in it."
 
 
 async def test_import_2_missing_path_and_unsupported_file_are_inline_errors(
@@ -161,7 +162,7 @@ async def test_import_3_folder_opens_a_preview_with_new_files_ticked(
         ]
         held = listing.get_option_at_index(2)  # emma.epub
         assert held.disabled
-        assert text(screen, "#preview-hint").startswith("Enter imports 3 files")
+        assert text(screen, "#preview-hint").startswith("Enter Import 3 files · Space Tick")
 
 
 async def test_import_3_space_unticks_and_a_toggles_all(library: Path, downloads: Path) -> None:
@@ -188,7 +189,7 @@ async def test_import_3_slash_filters_by_file_name(library: Path, downloads: Pat
         await pilot.press("slash", "d", "u")
         assert screen.query_one(PreviewList).option_count == 1
         assert text(screen, "#preview-hint").startswith(
-            "Enter imports 4 files, 3 hidden by the filter"
+            "Enter Import 4 files (3 hidden by the filter)"
         )
         await pilot.press("escape")  # clears the filter first
         assert screen.query_one(PreviewList).option_count == 5
@@ -210,6 +211,69 @@ async def test_import_3_a_subset_imports_only_the_ticked_files(library: Path, do
         assert summary.startswith("3 imported")
         assert "broken.epub" not in summary
         assert "notes.mobi" not in summary
+
+
+@pytest.fixture
+def nested(downloads: Path) -> Path:
+    """`downloads` plus a subfolder with a new book, and a dot-folder with
+    another that must never be listed or imported."""
+    (downloads / "classics").mkdir()
+    write_epub(downloads / "classics" / "persuasion.epub", Spec("Persuasion", "Jane Austen", isbn13(4)))
+    (downloads / ".stash").mkdir()
+    write_epub(downloads / ".stash" / "secret.epub", Spec("Secret", "Nobody", isbn13(5)))
+    return downloads
+
+
+async def test_import_1_ctrl_s_toggles_subfolders_while_typing(library: Path) -> None:
+    app = BookmanApp()
+    async with app.run_test() as pilot:
+        screen = await open_import(app, pilot)
+        box = screen.query_one("#import-recursive", Checkbox)
+        assert not box.value
+        await pilot.press("ctrl+s")
+        assert box.value and app.focused is screen.query_one("#import-path")
+        await pilot.press("ctrl+s")
+        assert not box.value
+
+
+async def test_import_1_subfolders_checkbox_sits_under_the_hint(library: Path) -> None:
+    app = BookmanApp()
+    async with app.run_test() as pilot:
+        screen = await open_import(app, pilot)
+        path, hint, box = (screen.query_one(s).region.y for s in ("#import-path", "#import-hint", "#import-recursive"))
+        assert path < hint < box
+
+
+def test_import_3_dot_files_and_dot_folders_are_left_out(nested: Path) -> None:
+    names = [str(path.relative_to(nested)) for path in folder_files(nested, recursive=True)]
+    assert "classics/persuasion.epub" in names
+    assert not any(name.startswith(".") or "/." in name for name in names)
+    assert files_in_dot_folders(nested)
+    assert not files_in_dot_folders(nested / "classics")
+
+
+async def test_import_3_subfolders_listed_without_dot_folders(library: Path, nested: Path) -> None:
+    app = BookmanApp()
+    async with app.run_test() as pilot:
+        screen = await open_import(app, pilot)
+        await pilot.press("ctrl+s")
+        await submit_path(app, pilot, nested)
+        listed = {entry.path.name for entry in screen.entries}
+        assert "persuasion.epub" in listed and "secret.epub" not in listed
+
+
+async def test_import_3_everything_new_skips_dot_folder_books(library: Path, nested: Path) -> None:
+    app = BookmanApp()
+    async with app.run_test() as pilot:
+        screen = await open_import(app, pilot)
+        await pilot.press("ctrl+s")
+        await submit_path(app, pilot, nested)
+        await pilot.press("enter")
+        await settle(app, pilot)
+        summary = text(screen, "#summary-text")
+        assert "persuasion.epub → Persuasion" in summary
+        assert "secret" not in summary.casefold()
+        assert all(book.title != "Secret" for book in Library(library, source=NullSource()).scan())
 
 
 async def test_import_7_bad_file_is_counted_and_the_rest_import(library: Path, downloads: Path) -> None:
@@ -250,7 +314,7 @@ async def test_import_5_esc_while_running_stays_and_hints_x(library: Path) -> No
         await pilot.press("escape")
         assert app.screen is screen and screen.stage is Stage.RUNNING
         assert screen.query_one("#run-hint").display
-        assert "x stops it after the current file" in text(screen, "#run-hint")
+        assert "Press x to stop it after the current file." in text(screen, "#run-hint")
         app.import_job = None
 
 
@@ -347,7 +411,7 @@ async def test_g_5_quit_is_refused_while_importing(library: Path, monkeypatch: p
         app.import_job = ImportJob()  # running: not finished
         await pilot.press("q")
         assert app.is_running
-        assert notices == ["An import is running. Stop it with x first."]
+        assert [Content.from_markup(n).plain for n in notices] == ["An import is running. Press x to stop it."]
         app.import_job = None
 
 

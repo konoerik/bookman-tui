@@ -11,7 +11,8 @@ from dataclasses import dataclass
 
 from bookman import Book, MatchBasis
 from textual.app import ComposeResult
-from textual.containers import VerticalScroll
+from textual.containers import Vertical, VerticalScroll
+from textual.events import Resize
 from textual.markup import escape
 from textual.reactive import reactive
 from textual.widget import Widget
@@ -26,6 +27,33 @@ MATCHED = {
     MatchBasis.TITLE_ONLY: "matched online by title only",
 }
 UNREADABLE = "couldn't read inside the file"
+
+COVER_ROWS = 21
+"""The cover's height with room to spare; 28 columns wide (cells are about
+twice as tall as wide, so a 2:3 cover is 4:3 in cells)."""
+COVER_MIN = 8
+"""Under this many rows a cover is too small to recognise, so it's left out."""
+TEXT_ROOM = 13
+"""Rows kept under the cover for the details when stacked: the usual book's
+title, author, ISBN, status and files, with the gaps between them."""
+SIDE_BY_SIDE = 60
+"""From this width the cover and the details sit side by side (BROWSE-7)."""
+
+
+def cover_size(height: int, *, side_by_side: bool) -> tuple[int, int] | None:
+    """The cover's (columns, rows) for a detail view `height` rows tall, or
+    None when it would be under `COVER_MIN` rows (BROWSE-3).
+
+    Stacked, the cover leaves `TEXT_ROOM` rows and a blank one for the
+    details under it; side by side it may take the full height. Either way
+    it depends on the room only, never on the book, so it doesn't jump as
+    the selection moves.
+    """
+    room = height if side_by_side else height - TEXT_ROOM - 1
+    rows = min(COVER_ROWS, room)
+    if rows < COVER_MIN:
+        return None
+    return round(rows * 4 / 3), rows
 
 
 @dataclass(frozen=True)
@@ -140,8 +168,8 @@ def _spelling(name: str) -> str:
 class BookDetail(Widget):
     """The selected book, top to bottom:
 
-    - cover slot: fixed size (about 20×14 cells); "No cover" when
-      `cover_path` is None. M5 draws the image here.
+    - cover slot: 28×21 cells, shrunk on a short view so the details stay
+      in sight, left out when too small (`cover_size`)
     - title (bold, wraps), author, `ISBN 979…` (each line omitted when blank)
     - the trust line (`trust`): mark and headline coloured green for ✓ and
       amber for ?, then each reason on its own line
@@ -152,6 +180,9 @@ class BookDetail(Widget):
 
     While `busy`, "Looking up…" shows under the trust line (LOOKUP-1).
 
+    From `SIDE_BY_SIDE` columns wide (the narrow-terminal details screen),
+    the cover sits left of the details rather than above them (BROWSE-7).
+
     Shows nothing when `book` is None (empty library or no selection).
     """
 
@@ -161,14 +192,26 @@ class BookDetail(Widget):
     def compose(self) -> ComposeResult:
         with VerticalScroll():
             yield Cover(id="detail-cover")
-            yield Static("", id="detail-title")
-            yield Static("", id="detail-author")
-            yield Static("", id="detail-isbn")
-            yield Static("", id="detail-trust")
-            yield Static("Looking up…", id="detail-busy")
-            yield Static("", id="detail-note")
-            yield Static("Files", id="detail-files-heading")
-            yield Static("", id="detail-files")
+            with Vertical(id="detail-text"):
+                yield Static("", id="detail-title")
+                yield Static("", id="detail-author")
+                yield Static("", id="detail-isbn")
+                yield Static("", id="detail-trust")
+                yield Static("Looking up…", id="detail-busy")
+                yield Static("", id="detail-note")
+                yield Static("Files", id="detail-files-heading")
+                yield Static("", id="detail-files")
+
+    def on_resize(self, event: Resize) -> None:
+        """Lay out for the new size: side by side or stacked, and the cover
+        sized for the room (BROWSE-3, BROWSE-7)."""
+        side_by_side = self.content_size.width >= SIDE_BY_SIDE
+        self.set_class(side_by_side, "-side-by-side")
+        cover = self.query_one(Cover)
+        size = cover_size(self.content_size.height, side_by_side=side_by_side)
+        cover.display = size is not None
+        if size is not None:
+            cover.styles.width, cover.styles.height = size
 
     def watch_book(self, book: Book | None) -> None:
         self.query_one(VerticalScroll).display = book is not None

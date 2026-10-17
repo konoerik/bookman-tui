@@ -77,13 +77,31 @@ BookDetail Static {
     margin-top: 1;
 }
 
-/* A fixed slot sized for a 2:3 cover (cells are about twice as tall as
-   wide, so 28 columns of a 2:3 image are 21 rows). */
+/* A slot sized for a 2:3 cover (cells are about twice as tall as wide, so
+   28 columns of a 2:3 image are 21 rows); BookDetail shrinks it on a short
+   view (BROWSE-3). */
 #detail-cover {
     width: 28;
     height: 21;
     align: center middle;
     background: $panel;
+}
+
+#detail-text {
+    height: auto;
+}
+
+/* Narrow-terminal details screen: cover left, details beside it (BROWSE-7). */
+BookDetail.-side-by-side VerticalScroll {
+    layout: horizontal;
+}
+
+BookDetail.-side-by-side #detail-cover {
+    margin: 0 2 0 0;
+}
+
+BookDetail.-side-by-side #detail-text {
+    width: 1fr;
 }
 
 #cover-image {

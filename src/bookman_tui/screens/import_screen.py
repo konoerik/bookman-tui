@@ -28,7 +28,8 @@ from textual.widgets import (
 )
 from textual.widgets.selection_list import Selection
 
-from bookman_tui.importing import Entry, ImportJob, Mark, is_supported, outcome_line, survey
+from bookman_tui.importing import Entry, ImportJob, Mark, files_in_dot_folders, is_supported, outcome_line, survey
+from bookman_tui.keys import key, keys_line, press
 from bookman_tui.location import display_path, folder_text
 from bookman_tui.widgets.path_input import PathInput, format_choices
 
@@ -68,7 +69,7 @@ def conflict_text(conflict: FormatConflictError) -> str:
     existing = conflict.existing
     advice = (
         f"To use the new file instead, copy it over {escape(existing.name)} by hand, "
-        "keeping that file name, then press ctrl+r."
+        f"keeping that file name, then press {key('ctrl+r')}."
     )
     if conflict.basis is MatchBasis.TITLE_ONLY:
         advice += " If it's a different book, bookman can't keep them apart yet."
@@ -135,6 +136,7 @@ class ImportScreen(Screen):
 
     BINDINGS = [
         Binding("escape", "back", "Back"),
+        Binding("ctrl+s", "toggle_recursive", "Subfolders"),
         Binding("escape", "hold", show=False),
         Binding("space", "noop", "Tick", show=False),  # footer hint for the list's own Space
         Binding("slash", "filter", "Filter", key_display="/", show=False),
@@ -151,6 +153,9 @@ class ImportScreen(Screen):
         self.ticked: set[Path] = set()
         self.folder: Path | None = None
         self.recursive = False
+        self.whole_folder = True
+        """Whether `iter_import` on the folder takes exactly the listed files,
+        so importing everything new can hand bookman the folder (IMPORT-3)."""
         self.logged = 0
         """Job log events already written to the RichLog."""
         self.shown: set[Path] = set()
@@ -167,8 +172,8 @@ class ImportScreen(Screen):
                     classes="import-intro",
                 )
                 yield PathInput(folder_text(Path.cwd()), placeholder="~/Downloads", id="import-path")
-                yield Checkbox("Include subfolders", id="import-recursive")
                 yield Static("", id="import-hint")
+                yield Checkbox("Include subfolders (ctrl+s)", id="import-recursive")
             with Vertical(id=Stage.PREVIEW.value):
                 yield Static("", id="preview-counts", classes="import-heading")
                 yield Static(
@@ -224,6 +229,8 @@ class ImportScreen(Screen):
             return stage in (Stage.PATH, Stage.PREVIEW, Stage.SUMMARY)
         if action in ("noop", "filter"):
             return stage is Stage.PREVIEW
+        if action == "toggle_recursive":
+            return stage is Stage.PATH
         if action == "hold":
             return stage is Stage.RUNNING
         if action == "stop":
@@ -238,24 +245,28 @@ class ImportScreen(Screen):
 
     # Path (IMPORT-1, IMPORT-2)
 
+    def action_toggle_recursive(self) -> None:
+        """`ctrl+s`: include subfolders or not, without leaving the path (IMPORT-1)."""
+        self.query_one("#import-recursive", Checkbox).toggle()
+
     def path_hint(self, text: str) -> tuple[str, bool]:
-        """What `Enter` will do with `text`, and whether it's an error."""
+        """What `Enter` will do with `text` (markup), and whether it's an error."""
         text = text.strip()
         if not text:
-            return "Type a file or folder to import. Tab completes.", False
+            return "Type a file or folder to import. " + press("Tab", "complete the path"), False
         path = Path(text).expanduser().absolute()
         if not path.exists():
-            return f"Nothing at {display_path(path)}.", True
+            return f"Nothing at {escape(display_path(path))}.", True
         if path.is_dir():
-            return f"Folder {display_path(path)}: Enter shows what's in it.", False
+            return f"Folder {escape(display_path(path))}. " + press("Enter", "see what's in it"), False
         if not is_supported(path):
-            return f"{path.name} isn't a format bookman reads ({SUPPORTED}).", True
-        return f"File {path.name}: Enter imports it.", False
+            return f"{escape(path.name)} isn't a format bookman reads ({SUPPORTED}).", True
+        return f"File {escape(path.name)}. " + press("Enter", "import it"), False
 
     def show_path_hint(self, text: str, message: str | None = None, *, error: bool | None = None) -> None:
         hint = self.query_one("#import-hint", Static)
         default, is_error = self.path_hint(text)
-        hint.update(escape(message if message is not None else default))
+        hint.update(escape(message) if message is not None else default)
         hint.set_class(is_error if error is None else error, "error")
 
     @on(Input.Changed, "#import-path")
@@ -282,7 +293,8 @@ class ImportScreen(Screen):
         try:
             if path.is_dir():
                 entries = survey(self.library, path, recursive)
-                self.app.call_from_thread(self.show_preview, path, entries)
+                whole_folder = not (recursive and files_in_dot_folders(path))
+                self.app.call_from_thread(self.show_preview, path, entries, whole_folder)
             else:
                 book = self.library.find_file(path)
                 self.app.call_from_thread(self.single_file, path, book)
@@ -299,8 +311,9 @@ class ImportScreen(Screen):
 
     # Preview (IMPORT-3)
 
-    def show_preview(self, folder: Path, entries: list[Entry]) -> None:
+    def show_preview(self, folder: Path, entries: list[Entry], whole_folder: bool = True) -> None:
         self.folder = folder
+        self.whole_folder = whole_folder
         self.entries = entries
         self.ticked = {entry.path for entry in entries if entry.mark is Mark.NEW}
         self.query_one("#preview-counts", Static).update(preview_counts(entries))
@@ -341,11 +354,11 @@ class ImportScreen(Screen):
     def show_preview_hint(self) -> None:
         count = len(self.ticked)
         hidden = len(self.ticked - self.shown)
-        files = plural(count, "file") + (f", {hidden} hidden by the filter" if hidden else "")
+        files = plural(count, "file") + (f" ({hidden} hidden by the filter)" if hidden else "")
         text = (
-            f"Enter imports {files} · Space ticks · a ticks all · / filters"
+            keys_line(("Enter", f"Import {files}"), ("Space", "Tick"), ("a", "Tick all"), ("/", "Filter"))
             if count
-            else "Nothing ticked: Space ticks a file, a ticks all new files."
+            else f"Nothing ticked. Press {key('Space')} to tick a file, or {key('a')} to tick all new files."
         )
         self.query_one("#preview-hint", Static).update(text)
 
@@ -379,7 +392,7 @@ class ImportScreen(Screen):
         if not self.ticked:
             return
         new = {entry.path for entry in self.entries if entry.mark is Mark.NEW}
-        if self.ticked == new:
+        if self.ticked == new and self.whole_folder:
             job = ImportJob(folder=self.folder, recursive=self.recursive)
         else:
             job = ImportJob(files=sorted(self.ticked))
@@ -460,7 +473,7 @@ class ImportScreen(Screen):
         if job is not None and job.stopping:
             hint.update("The import stops after the current file.")
         else:
-            hint.update("The import holds this screen until it ends. x stops it after the current file.")
+            hint.update("The import holds this screen until it ends. " + press("x", "stop it after the current file"))
         hint.display = True
 
     def action_noop(self) -> None:

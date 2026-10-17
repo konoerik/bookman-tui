@@ -9,6 +9,8 @@ import pytest
 from bookman import Library, NullSource
 from textual.widgets import Static
 
+from textual.content import Content
+
 from bookman_tui import reveal
 from bookman_tui.app import BookmanApp, reload_summary
 from bookman_tui.reveal import folder_command
@@ -128,7 +130,9 @@ async def test_browse_11_a_folder_gone_since_loading_is_reported(mock_root: Path
         shutil.rmtree(book.directory)
         await press_and_settle(pilot, "F")
         assert opened == []
-        assert notices == [f"“{book.title}”'s folder is gone. ctrl+r reloads the library."]
+        assert [Content.from_markup(n).plain for n in notices] == [
+            f"“{book.title}”'s folder is gone. Press ctrl+r to reload the library."
+        ]
 
 
 async def test_browse_11_a_command_that_cant_run_is_reported(mock_root: Path, monkeypatch) -> None:

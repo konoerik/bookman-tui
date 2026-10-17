@@ -14,6 +14,7 @@ from textual.reactive import reactive
 from textual.screen import Screen
 from textual.widgets import DataTable, Footer, Header, Input, Static
 
+from bookman_tui.keys import press
 from bookman_tui.screens.details import DetailsScreen
 from bookman_tui.screens.edit_dialog import EditDialog
 from bookman_tui.store import NEEDS_REVIEW, BookRow, Catalog, Grouping, Sort, arrange, match_summary, status_group
@@ -122,7 +123,7 @@ class BrowserScreen(Screen):
         if catalog is None:
             message.update("Loading library…")
         elif not catalog:
-            message.update("No books yet — press [bold]i[/] to import")
+            message.update("No books yet. " + press("i", "import some"))
         elif not books:
             message.update(f'No books match "{escape(query)}"')  # FIND-5
         if catalog is not None:

@@ -7,22 +7,27 @@
 Skeleton first, in small milestones; each ends with a visual review by the
 user before the next starts.
 
-- **M12 UI polish** — from the M3 review: the title column takes too much
-  width next to author and formats (rebalance, e.g. cap the title or share
-  spare width); the plain table look (stripes, header, colours) once the
-  browser is complete; the narrow details screen (BROWSE-7) leaves the right
-  side empty with everything left-aligned (centre it, or use the width),
-  and it shows a scrollbar on short terminals. From the M8 review: one
-  voice for hints and key prompts across screens (e.g. "Enter imports it"
-  vs "Press Enter again to create"), a style rule for it in FLOWS.md.
-  From the M9 review: the "Include subfolders" checkbox sits between the
-  path and `Enter`, and `Tab` completes the path rather than moving focus,
-  so ticking it means a trip to the mouse (move it, or give it a key)
+- **M12 UI polish** — built, awaiting the user's visual review and commit:
+  - [x] Column widths (BROWSE-1/7): title and author share about 2:1,
+    formats never cut; fixed Formats clipping at 100 columns
+  - [x] "Include subfolders" (IMPORT-1): `ctrl+s` toggles it from the path,
+    checkbox under the hint; dot-folders left out (IMPORT-3, inbox
+    2026-10-14). A preview toggle was tried and dropped
+  - [x] Details layout (BROWSE-3/7): cover shrinks on short terminals, left
+    out under 8 rows; details screen puts cover and details side by side
+  - [x] Hint voice (G-7): "Press `x` to …" in sentences, footer-style key
+    lists, keys drawn as the footer draws them, footer says `Esc`/`ctrl+r`
+  - [x] Table look: reviewed stripes and an accent header on 2026-10-16;
+    kept as it is
 
 
 ## Backlog
 <!-- Accepted but not yet active. Load this section only when planning or prioritizing. -->
 
+- **Import screen revisit** (low) — from M12 (2026-10-16): fine for now,
+  but on short terminals (about 20 rows) the "Include subfolders" checkbox
+  drops below the panel, and a merged path + live preview screen was
+  floated (doable, with debounce, cancellable reads and cached hashes)
 - **Key bindings review** (low) — from the M7 review: in the book list `DataTable` jumps to top/bottom only with `ctrl+home`/`ctrl+end`, while plain `home`/`end` scroll sideways (Textual 8.2.8). Fine for now; revisit with the other browser keys (e.g. bind `home`/`end`, or `G`-style jumps without chords per ADR-7)
 
 

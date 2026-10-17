@@ -8,7 +8,7 @@ from pathlib import Path
 
 from bookman_tui.app import BookmanApp
 from bookman_tui.store import BookRow
-from bookman_tui.widgets.book_table import AUTHOR_MAX, BookTable
+from bookman_tui.widgets.book_table import AUTHOR_MIN, TITLE_MIN, BookTable, share_widths
 
 
 def rows(books) -> list[BookRow]:
@@ -134,7 +134,7 @@ async def test_browse_5_reload_keeps_the_selection(mock_root: Path) -> None:
         assert title_of(app, table.selected_id) == chosen
 
 
-async def test_browse_7_title_column_takes_the_spare_width(mock_root: Path) -> None:
+async def test_browse_7_rows_fill_the_table_at_every_width(mock_root: Path) -> None:
     app, run = await open_mock(mock_root, size=(120, 30))
     async with run as pilot:
         table = await loaded(app, pilot)
@@ -156,6 +156,41 @@ async def test_browse_1_long_title_and_author_are_cut_with_ellipsis(mock_root: P
     app, run = await open_mock(mock_root, size=(80, 30))
     async with run as pilot:
         table = await loaded(app, pilot)
-        assert table.columns["author"].width == AUTHOR_MAX
         cells = row_of(table, "Design Patterns: Elements of Reusable Object-Oriented Software")
         assert cells[1].overflow == "ellipsis" and cells[1].no_wrap
+
+
+def test_browse_1_title_and_author_share_about_two_to_one() -> None:
+    assert share_widths(90, title_need=80, author_need=50) == (60, 30)
+
+
+def test_browse_1_neither_column_wider_than_it_needs_while_the_other_could_use_it() -> None:
+    # Short titles, long authors: the author takes what the title doesn't need.
+    assert share_widths(60, title_need=20, author_need=50) == (20, 40)
+    # Short authors: the title takes the rest.
+    assert share_widths(60, title_need=40, author_need=12) == (48, 12)
+
+
+def test_browse_1_room_nobody_needs_goes_to_the_title() -> None:
+    assert share_widths(100, title_need=30, author_need=20) == (80, 20)
+
+
+def test_browse_1_author_gives_way_first_on_a_narrow_table() -> None:
+    title, author = share_widths(35, title_need=60, author_need=50)
+    assert title + author == 35 and title >= TITLE_MIN and author < 35 // 2
+    assert share_widths(TITLE_MIN + AUTHOR_MIN, title_need=60, author_need=50) == (TITLE_MIN, AUTHOR_MIN)
+
+
+def test_browse_1_below_both_minimums_the_columns_keep_them() -> None:
+    assert share_widths(12, title_need=60, author_need=50) == (TITLE_MIN, AUTHOR_MIN)
+
+
+async def test_browse_1_formats_never_cut_beside_the_pane(mock_root: Path) -> None:
+    # 100 columns: the narrowest terminal that still shows the detail pane.
+    app, run = await open_mock(mock_root, size=(100, 30))
+    async with run as pilot:
+        table = await loaded(app, pilot)
+        used = sum(c.get_render_width(table) for c in table.columns.values())
+        assert used <= table.size.width
+        assert table.columns["formats"].width >= len("EPUB PDF")
+        assert table.columns["title"].width > table.columns["author"].width >= AUTHOR_MIN

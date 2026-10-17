@@ -19,12 +19,14 @@ from bookman import (
 )
 from textual.app import ComposeResult
 from textual.binding import Binding
+from textual.markup import escape
 from textual.containers import Vertical
 from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import Screen
 from textual.widgets import Footer, Header, Input, Static
 
+from bookman_tui.keys import key, press
 from bookman_tui.location import display_path
 from bookman_tui.widgets.path_input import PathInput, format_choices
 
@@ -59,21 +61,21 @@ def assess(text: str) -> Assessment:
     if not text:
         return Assessment(Choice.NOTHING, None, "Type the folder your library should live in.")
     path = Path(os.path.abspath(Path(text).expanduser()))
-    shown = display_path(path)
+    shown = escape(display_path(path))
     try:
         if not path.exists():
-            return Assessment(Choice.CREATE, path, f"New folder {shown}: Enter creates it.")
+            return Assessment(Choice.CREATE, path, f"New folder {shown}. " + press("Enter", "create it"))
         if not path.is_dir():
             return Assessment(Choice.REFUSE, path, f"{shown} is a file, not a folder.")
         if is_library(path):
-            return Assessment(Choice.OPEN, path, f"Existing library {shown}: Enter opens it.")
+            return Assessment(Choice.OPEN, path, f"Existing library {shown}. " + press("Enter", "open it"))
         if all(entry.name.startswith(".") for entry in path.iterdir()):
             return Assessment(
-                Choice.ADOPT, path, f"Empty folder {shown}: Enter makes it your library."
+                Choice.ADOPT, path, f"Empty folder {shown}. " + press("Enter", "make it your library")
             )
     except OSError as error:
         return Assessment(
-            Choice.REFUSE, path, f"Can't use {shown}: {error.strerror or error}."
+            Choice.REFUSE, path, f"Can't use {shown}: {escape(str(error.strerror or error))}."
         )
     return Assessment(Choice.REFUSE, path, f"{shown} has other files in it. {NOT_EMPTY}")
 
@@ -172,7 +174,7 @@ class SetupScreen(Screen):
         assert assessment.path is not None
         if assessment.choice is Choice.CREATE and not self.confirming:
             self.confirming = True
-            self.confirm(f"Press Enter again to create {display_path(assessment.path)}.")
+            self.confirm(f"Press {key('Enter')} again to create {escape(display_path(assessment.path))}.")
             return
         self.choose(assessment.path, create=assessment.choice is Choice.CREATE)
 
@@ -187,7 +189,7 @@ class SetupScreen(Screen):
             self.app.exit()
         else:
             self.quitting = True
-            self.confirm("Press Esc again to quit.")
+            self.confirm(f"Press {key('Esc')} again to quit.")
 
     def choose(self, path: Path, *, create: bool) -> None:
         """Open or create the library at `path`, then save it (SETUP-3)."""
@@ -204,6 +206,6 @@ class SetupScreen(Screen):
             save_config(saved)
         except (BookmanError, OSError) as error:
             self.confirming = False
-            self.show(Assessment(Choice.REFUSE, path, f"Can't use this folder: {error}"), error=True)
+            self.show(Assessment(Choice.REFUSE, path, f"Can't use this folder: {escape(str(error))}"), error=True)
             return
         self.post_message(self.LibraryChosen(path))

@@ -55,12 +55,27 @@ def is_supported(path: Path) -> bool:
     return path.suffix.lower() in supported_suffixes()
 
 
+def _dotted(path: Path, folder: Path) -> bool:
+    """Whether `path`, or a folder between it and `folder`, starts with "."."""
+    return any(part.startswith(".") for part in path.relative_to(folder).parts)
+
+
 def folder_files(folder: Path, recursive: bool) -> list[Path]:
-    """The files `iter_import` would consider, in its order: non-hidden
-    files directly in `folder` (or under it, if `recursive`), sorted
-    [bookman 1.3.0 @ 1bdad64]."""
+    """The files the preview lists and the import takes, in `iter_import`'s
+    order: files directly in `folder` (or under it, if `recursive`), sorted,
+    leaving out those whose name starts with "." and everything in a folder
+    whose name does (IMPORT-3)."""
     candidates = folder.rglob("*") if recursive else folder.iterdir()
-    return sorted(path for path in candidates if path.is_file() and not path.name.startswith("."))
+    return sorted(path for path in candidates if path.is_file() and not _dotted(path, folder))
+
+
+def files_in_dot_folders(folder: Path) -> bool:
+    """Whether a subfolder of `folder` whose name starts with "." holds a file
+    `iter_import(recursive=True)` would take, which `folder_files` leaves out:
+    bookman skips such files by their own name only [bookman 1.3.0 @ 1bdad64]."""
+    return any(
+        path.is_file() and not path.name.startswith(".") and _dotted(path, folder) for path in folder.rglob("*")
+    )
 
 
 def survey(library: Library, folder: Path, recursive: bool) -> list[Entry]:

@@ -53,7 +53,7 @@ async def test_setup_1_prefilled_with_a_suggested_folder(
         field = app.screen.query_one("#setup-path", Input)
         assert field.value == display_path(tmp_path / "Books")
         assert field.cursor_position == len(field.value)
-        assert hint(app) == f"New folder {field.value}: Enter creates it."
+        assert hint(app) == f"New folder {field.value}. Press Enter to create it."
         await pilot.press("enter", "enter")
         await app.workers.wait_for_complete()
         await pilot.pause()

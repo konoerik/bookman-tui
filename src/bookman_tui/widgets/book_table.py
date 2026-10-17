@@ -13,8 +13,24 @@ from textual.widgets import DataTable
 
 from bookman_tui.store import BookRow, GroupHeader, Row
 
-AUTHOR_MAX = 28
-TITLE_MIN = 12
+TITLE_MIN = 20
+AUTHOR_MIN = 10
+
+
+def share_widths(room: int, title_need: int, author_need: int) -> tuple[int, int]:
+    """Split `room` columns between title and author (BROWSE-1).
+
+    About 2:1, but neither gets more than its longest entry needs while the
+    other could use it; room nobody needs goes to the title. When `room` is
+    short the author gives way first, to `AUTHOR_MIN`, then the title, to
+    `TITLE_MIN`; below that the two add up to more than `room`.
+
+    Returns (title width, author width).
+    """
+    author = min(author_need, max(AUTHOR_MIN, room // 3, room - title_need))
+    title = max(TITLE_MIN, room - author)
+    author = max(AUTHOR_MIN, min(author, room - title))
+    return title, author
 
 
 class BookTable(DataTable):
@@ -22,10 +38,9 @@ class BookTable(DataTable):
     list is grouped, a header row before each group (BROWSE-9).
 
     Columns: title, author, formats, and a review marker (BROWSE-1):
-    - title: `Book.title`, taking all the width the other columns leave
-      (BROWSE-7); a long one is cut with "…"
-    - author: `Book.author`, or blank; capped at about 28 columns, with "…"
-    - formats: the kinds in bookman's order, e.g. `EPUB PDF`
+    - title: `Book.title`; a long one is cut with "…"
+    - author: `Book.author`, or blank; cut the same way
+    - formats: the kinds in bookman's order, e.g. `EPUB PDF`; never cut
     - review: `?` (warning colour) when `Book.needs_review`, else blank
 
     `j`/`k` move the cursor as the arrows do (BROWSE-2). The cursor never
@@ -56,7 +71,8 @@ class BookTable(DataTable):
         self._book_row = 0
         """Where the cursor last rested on a book; tells which way it was
         going when it lands on a header."""
-        self._title_width = 0
+        self._widths: tuple[int, int] = (0, 0)
+        """The title and author widths the columns were last built with."""
 
     def show(self, rows: list[Row], selected_id: str | None = None) -> None:
         """Replace the rows with `rows` (from `store.arrange`), in that order.
@@ -109,19 +125,18 @@ class BookTable(DataTable):
         raise ValueError("no book rows")
 
     def _fill(self) -> None:
-        """Rebuild columns and rows; the title column takes the spare width (BROWSE-7)."""
-        books = self._books()
-        author_width = min(AUTHOR_MAX, max([cell_len("Author"), *(cell_len(b.author or "") for b in books)]))
-        formats_width = max([cell_len("Formats"), *(cell_len(_formats(b)) for b in books)])
-        self._title_width = self._spare_width(author_width + formats_width + 1)
+        """Rebuild columns and rows, title and author sharing the width the
+        others leave (BROWSE-1)."""
+        formats_width = max([cell_len("Formats"), *(cell_len(_formats(b)) for b in self._books())])
+        self._widths = title_width, author_width = self._share(formats_width)
         marker = Text("?", style=f"bold {self.app.theme_variables.get('warning', 'yellow')}")
         self.clear(columns=True)
         self.add_column("", width=1, key="review")
-        self.add_column("Title", width=self._title_width, key="title")
+        self.add_column("Title", width=title_width, key="title")
         self.add_column("Author", width=author_width, key="author")
         self.add_column("Formats", width=formats_width, key="formats")
         header_style = f"bold {self.app.theme_variables.get('accent', 'blue')}"
-        widths = (1, self._title_width, author_width, formats_width)
+        widths = (1, title_width, author_width, formats_width)
         for row in self._rows:
             if isinstance(row, GroupHeader):
                 self.add_row(*_header_cells(row, widths, header_style), key=f"header/{row.label}")
@@ -135,10 +150,16 @@ class BookTable(DataTable):
                 key=row.key,
             )
 
-    def _spare_width(self, others: int) -> int:
+    def _share(self, formats_width: int) -> tuple[int, int]:
+        """Title and author widths for the room left beside the marker and
+        `formats_width`."""
+        books = self._books()
         padding = 2 * self.cell_padding * 4
         scrollbar = self.styles.scrollbar_size_vertical if len(self._rows) > self.size.height - 1 else 0
-        return max(TITLE_MIN, self.size.width - others - padding - scrollbar)
+        room = self.size.width - 1 - formats_width - padding - scrollbar
+        title_need = max([cell_len("Title"), *(cell_len(b.title) for b in books)])
+        author_need = max([cell_len("Author"), *(cell_len(b.author or "") for b in books)])
+        return share_widths(room, title_need, author_need)
 
     def on_resize(self, event: Resize) -> None:
         if self._needs_refit():
@@ -147,8 +168,9 @@ class BookTable(DataTable):
     def _needs_refit(self) -> bool:
         if not self._rows:
             return False
-        others = sum(self.columns[key].width for key in ("author", "formats", "review") if key in self.columns)
-        return self._spare_width(others) != self._title_width
+        if "formats" not in self.columns:
+            return False
+        return self._share(self.columns["formats"].width) != self._widths
 
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
         """Hop off a header row, else report the book (BROWSE-9).

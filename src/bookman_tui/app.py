@@ -24,6 +24,7 @@ from bookman import (
 from textual import work
 from textual.app import App
 from textual.binding import Binding
+from textual.markup import escape
 from textual.reactive import reactive
 from textual.screen import Screen
 from textual.signal import Signal
@@ -31,6 +32,7 @@ from textual.signal import Signal
 from bookman_tui import reveal
 from bookman_tui.curating import batch_summary, could_help, lookup_summary
 from bookman_tui.importing import ImportJob
+from bookman_tui.keys import key_name, press
 from bookman_tui.location import display_path, header_text, not_found_reason, sentence
 from bookman_tui.prefs import Prefs, load_prefs, save_prefs
 from bookman_tui.screens.browser import BrowserScreen
@@ -356,7 +358,10 @@ class BookmanApp(App):
         the library, so no guard (BROWSE-13)."""
         folder = book.directory
         if folder is None or not folder.is_dir():
-            self.notify(f"“{book.title}”'s folder is gone. ctrl+r reloads the library.", severity="warning")
+            self.notify(
+                f"“{escape(book.title)}”'s folder is gone. " + press("ctrl+r", "reload the library"),
+                severity="warning",
+            )
             return
         self.run_open_folder(folder)
 
@@ -427,9 +432,14 @@ class BookmanApp(App):
     def action_quit(self) -> None:
         """Quit, unless an import is running (G-5)."""
         if self.importing:
-            self.notify("An import is running. Stop it with x first.", severity="warning")
+            self.notify("An import is running. " + press("x", "stop it"), severity="warning")
             return
         self.exit()
+
+    def get_key_display(self, binding: Binding) -> str:
+        """Keys in the footer and key panel as hints write them (G-7):
+        `Esc` and `ctrl+r` rather than `esc` and `^r`."""
+        return binding.key_display or key_name(binding.key)
 
     def action_toggle_help(self) -> None:
         """Show or hide the keys for the current screen (G-6)."""
