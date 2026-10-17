@@ -19,7 +19,7 @@ classifiers = [
     "Topic :: Utilities",
 ]
 dependencies = [
-    "bookman @ git+https://github.com/konoerik/bookman.git@v1.3.0",
+    "bookman[crypto] @ git+https://github.com/konoerik/bookman.git@v1.3.0",
     "textual>=8.2.8",
     "textual-image>=0.12.0",
 ]

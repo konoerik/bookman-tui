@@ -6,6 +6,8 @@ library without leaving the terminal: work through the books bookman
 couldn't identify, correct titles, authors and ISBNs, and look books up again
 online.
 
+![bookman-tui: browsing, searching, grouping by status and fixing a book that needs review](docs/demo.gif)
+
 Built with [Textual](https://textual.textualize.io). All library behaviour
 (identifying, fetching metadata, filing) lives in bookman; this app is the
 interface to it.
@@ -68,6 +70,9 @@ make try-mock      # run against a generated mock library
 The `try-*` targets (`try-mock`, `try-import`, `try-firstrun`, …; see the
 `Makefile`) run the app with its own config under `.dev/sandbox`, so they
 never touch your real library or settings.
+
+`make demo` re-records `docs/demo.gif` from `demo/demo.tape` (needs
+[VHS](https://github.com/charmbracelet/vhs)).
 
 ### Working on bookman alongside
 

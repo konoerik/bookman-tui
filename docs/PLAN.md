@@ -20,12 +20,19 @@ keep all claudify and docs files tracked.
   `make try-*`
 - [x] MIT LICENSE; `pyproject.toml` license and project URLs
 - [x] CLAUDE.md: describe the new dependency setup
+- [x] bookman `crypto` extra on (encrypted PDFs read, not filed by name)
+- [x] Demo GIF: `demo/demo.tape` → `docs/demo.gif` via `make demo` (VHS),
+  shown in the README; approved 2026-10-17
 - [x] Add `origin`, push `main`, tag `v1.0.0` (version 1.0.0; small feature updates bump minor)
 
 
 ## Backlog
 <!-- Accepted but not yet active. Load this section only when planning or prioritizing. -->
 
+- **bookman as a release wheel?** (low) — from M13 (2026-10-17): bookman's
+  README installs the wheel from its GitHub Release; we use the git URL +
+  tag (same release, but cloned and built on install). Decide together
+  with whether either project goes to PyPI, so the dependency changes once
 - **CI** (low) — from M13 (2026-10-17): GitHub Actions running `uv sync`
   + `uv run pytest` on Python 3.10 and latest; also catches bookman
   git-dependency breakage

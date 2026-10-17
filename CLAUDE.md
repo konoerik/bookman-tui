@@ -8,7 +8,7 @@ presentation and interaction only.
 
 ### bookman dependency
 - Installed from **git, pinned to a release tag**
-  (`bookman @ git+https://github.com/konoerik/bookman.git@vX.Y.Z` in
+  (`bookman[crypto] @ git+https://github.com/konoerik/bookman.git@vX.Y.Z` in
   `pyproject.toml`; `uv.lock` pins the commit). Not on PyPI, and PyPI's
   `bookman` is an unrelated package — never depend on a bare `bookman`
 - To pick up a new bookman release: bump the tag, `uv lock`, re-check stamps

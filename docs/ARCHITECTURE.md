@@ -115,7 +115,7 @@
 **Date:** 2026-10-17
 **Context:** Until now, bookman was installed from the local `../bookman` folder as an editable dependency. That works only on a machine where both repos sit side by side. Once bookman-tui is pushed to GitHub (M13), anyone cloning it has no `../bookman`, and `uv.lock` records that path, so `uv sync` and `uv tool install` both fail. bookman isn't on PyPI, and the PyPI name `bookman` belongs to an unrelated bookmarks tool (v0.5), so a bare `bookman` requirement would install the wrong package outside uv.
 **Decision:**
-- `pyproject.toml` depends on `bookman @ git+https://github.com/konoerik/bookman.git@v1.3.0`, and `uv.lock` pins the commit (`1bdad64`). There is no `[tool.uv.sources]` entry for bookman.
+- `pyproject.toml` depends on `bookman[crypto] @ git+https://github.com/konoerik/bookman.git@v1.3.0`, and `uv.lock` pins the commit (`1bdad64`). There is no `[tool.uv.sources]` entry for bookman. The `crypto` extra (pycryptodome) is on because the TUI is an end-user app: AES-encrypted PDFs (InformIT's) are read instead of filed under their file name [bookman 1.3.0 @ 1bdad64].
 - Plain `uv run pytest` and `make` targets run against the pinned release, which is what users get. Moving to a new bookman release means changing the tag, running `uv lock`, and re-checking the version stamps against the new tag.
 - `make <target> BOOKMAN=local` runs any target with `uv run --with-editable ../bookman` (`BOOKMAN_DIR` picks a different checkout) to work against unreleased bookman changes.
 
