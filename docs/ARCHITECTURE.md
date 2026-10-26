@@ -1,16 +1,16 @@
 # Architecture
 
 ## Quick Reference
-**Stack:** Python 3.10+, Textual, bookman (git dependency pinned to a release tag; `make … BOOKMAN=local` for the `../bookman` checkout)
-**bookman baseline:** 1.3.0 @ `1bdad64` — bookman API claims below were checked against this; see CLAUDE.md for re-checking
-**Entry point:** `src/bookman_tui/app.py` (`BookmanApp`); console script `bookman-tui` → `bookman_tui:main`
-**Key paths:** `src/bookman_tui/screens/`, `src/bookman_tui/widgets/`, `src/bookman_tui/app.tcss`; `tools/mock_library.py` (dev only: builds a mock library through bookman's public API with a scripted `MetadataSource`, used by `make try-mock` and the test fixtures)
+**Stack:** Python 3.10+, Textual, bookmgr from PyPI (ADR-13; `make … BOOKMGR=local` for the `../bookmgr` checkout)
+**bookmgr baseline:** 2.0.0 @ `bf61464` — bookmgr API claims below were checked against this (claims stamped 1.3.0 @ `1bdad64` hold unchanged: 2.0.0 only renamed); see CLAUDE.md for re-checking
+**Entry point:** `src/bookmgr_tui/app.py` (`BookmgrApp`); console script `bookmgr-tui` → `bookmgr_tui:main`
+**Key paths:** `src/bookmgr_tui/screens/`, `src/bookmgr_tui/widgets/`, `src/bookmgr_tui/app.tcss`; `tools/mock_library.py` (dev only: builds a mock library through bookmgr's public API with a scripted `MetadataSource`, used by `make try-mock` and the test fixtures)
 **Key constraints:**
-- bookman through its public API only (`bookman.__all__`); never the `bookman` CLI (ADR-1)
+- bookmgr through its public API only (`bookmgr.__all__`); never the `bookmgr` CLI (ADR-1)
 - Nothing that blocks runs on the event loop: imports, re-identify and any other network call go to thread workers (ADR-4)
-- One write operation at a time per library; bookman has no lock [bookman 1.3.0 @ 1bdad64] (ADR-4)
+- One write operation at a time per library; bookmgr has no lock [bookman 1.3.0 @ 1bdad64] (ADR-4)
 - The library is opened only through `configured_library` [bookman 1.3.0 @ 1bdad64], never `Library(root)`, which creates and marks any folder it is given
-- The TUI keeps no settings bookman owns and never switches the library; sources config waits on bookman (ADR-6, ADR-8); its own display prefs live in a separate file (ADR-9)
+- The TUI keeps no settings bookmgr owns and never switches the library; sources config waits on bookmgr (ADR-6, ADR-8); its own display prefs live in a separate file (ADR-9)
 - User-facing behaviour is specified in `docs/FLOWS.md`; interaction conventions in ADR-7
 **Patterns:** Reactive state, message passing, screen composition
 
@@ -113,6 +113,7 @@
 
 ### ADR-12: bookman is a git dependency pinned to a release tag; `BOOKMAN=local` uses the checkout
 **Date:** 2026-10-17
+**Status:** Superseded by ADR-13; `BOOKMAN=local` carries on as `BOOKMGR=local`.
 **Context:** Until now, bookman was installed from the local `../bookman` folder as an editable dependency. That works only on a machine where both repos sit side by side. Once bookman-tui is pushed to GitHub (M13), anyone cloning it has no `../bookman`, and `uv.lock` records that path, so `uv sync` and `uv tool install` both fail. bookman isn't on PyPI, and the PyPI name `bookman` belongs to an unrelated bookmarks tool (v0.5), so a bare `bookman` requirement would install the wrong package outside uv.
 **Decision:**
 - `pyproject.toml` depends on `bookman[crypto] @ git+https://github.com/konoerik/bookman.git@v1.3.0`, and `uv.lock` pins the commit (`1bdad64`). There is no `[tool.uv.sources]` entry for bookman. The `crypto` extra (pycryptodome) is on because the TUI is an end-user app: AES-encrypted PDFs (InformIT's) are read instead of filed under their file name [bookman 1.3.0 @ 1bdad64].
@@ -130,13 +131,31 @@
 - Installing needs network access to GitHub.
 - Publishing bookman-tui to PyPI depends on bookman reaching PyPI first, under a free name.
 
+### ADR-13: bookmgr from PyPI; the app renamed bookmgr-tui
+**Date:** 2026-10-26
+**Context:** bookman 1.3.0 was renamed `bookmgr` and released as 2.0.0, its first PyPI release, with no other change [bookmgr 2.0.0 @ bf61464] (bookmgr ADR-45). The name clash that kept ADR-12 on a git URL is gone, and the GitHub repos are already `konoerik/bookmgr` and `konoerik/bookmgr-tui`.
+**Decision:**
+- `pyproject.toml` depends on `bookmgr[crypto]>=2.0` from PyPI; `uv.lock` pins the exact release. The `crypto` extra stays on for the reason in ADR-12.
+- The app follows the rename: distribution and command `bookmgr-tui`, package `bookmgr_tui`, `BookmgrApp`, `BOOKMGR_TUI_PREFS`, and a `bookmgr-tui` prefs folder. It is a clean break, with no aliases and no migration code, because the author is the only user. Version 2.0.0, since the command and prefs location change.
+- `make <target> BOOKMGR=local` (`BOOKMGR_DIR ?= ../bookmgr`) works against the checkout, as before.
+
+**Alternatives considered:**
+- Staying on the git URL at `v2.0.0`: it still works, but it clones and builds on every install, and it would block a PyPI release of bookmgr-tui, since PyPI rejects git-URL dependencies.
+- An exact pin (`==2.0.0`): the lock already pins the release for development; a lower bound lets a user's resolver take bookmgr fixes.
+- Keeping the app's old names with aliases: there is no one else to migrate.
+
+**Consequences:**
+- A new bookmgr release reaches a fresh `uv tool install` without a change here, so a bookmgr release could break the TUI before the tests see it. The CI job (Backlog) covers that.
+- Stamps from before the rename (`[bookman 1.3.0 @ 1bdad64]`) stay as history; the 2.0.0 source matches 1.3.0 once the names are mapped.
+- bookmgr-tui itself could now go to PyPI; not planned yet.
+
 ## Detail
 
 ### App structure
 ```
-src/bookman_tui/
-├── __init__.py       # main(): parse args (--library), run BookmanApp
-├── app.py            # BookmanApp: owns Library, catalog store, write guard
+src/bookmgr_tui/
+├── __init__.py       # main(): parse args (--library), run BookmgrApp
+├── app.py            # BookmgrApp: owns Library, catalog store, write guard
 ├── app.tcss          # Global styles
 ├── store.py          # In-memory catalog keyed by Book.id; search, sort, grouping (ADR-3, ADR-9)
 ├── screens/
@@ -158,7 +177,7 @@ src/bookman_tui/
 - **App-level:** the `Library` instance (built by `configured_library(--library)`) and its `LibraryLocation` (`locate_library`, for the header), the catalog store (all `Book`s by `id`), the current search text, the sort and grouping (ADR-9), and the write-in-progress flag. These and the write flag are `reactive`; watchers push updates to the screens.
 - **Store updates:** after any write, the returned `Book` replaces the entry with the same `id` (edit, mark reviewed, re-identify, and each import result). A full `scan()` happens at startup and on manual refresh.
 - **Screens and widgets:** keep only view state (selected `id`, scroll position). They request changes by posting messages to the App and never call `Library` directly.
-- **Errors:** anything raised as `BookmanError` is shown to the user, e.g. an invalid ISBN from `edit` (`CatalogError`). At startup `LibraryNotConfiguredError` routes to the setup screen, and `ConfigError` or `LibraryNotFoundError` to the start-problem screen (START-4, START-5). Anything else is a bug and propagates.
+- **Errors:** anything raised as `BookmgrError` is shown to the user, e.g. an invalid ISBN from `edit` (`CatalogError`). At startup `LibraryNotConfiguredError` routes to the setup screen, and `ConfigError` or `LibraryNotFoundError` to the start-problem screen (START-4, START-5). Anything else is a bug and propagates.
 
 ### Screen map
 What each screen shows and which keys it takes is specified in `docs/FLOWS.md` (the source of truth; not repeated here). Structurally:

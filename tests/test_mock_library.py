@@ -1,6 +1,6 @@
 """The mock library still produces the states it was designed to show.
 
-A failure here after a bookman upgrade means its matching behaviour moved
+A failure here after a bookmgr upgrade means its matching behaviour moved
 and the catalogue in tools/mock_library.py needs adjusting.
 """
 
@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from bookman import Library, MatchBasis, NullSource, ReadIssue
+from bookmgr import Library, MatchBasis, NullSource, ReadIssue
 
 
 def books_by_title(root: Path) -> dict:

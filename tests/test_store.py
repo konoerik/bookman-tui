@@ -6,9 +6,9 @@ import dataclasses
 from pathlib import Path
 
 import pytest
-from bookman import Book, Library, NullSource
+from bookmgr import Book, Library, NullSource
 
-from bookman_tui.store import Catalog, title_sort_key
+from bookmgr_tui.store import Catalog, title_sort_key
 
 
 @pytest.fixture

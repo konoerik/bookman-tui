@@ -6,20 +6,20 @@ import shutil
 from pathlib import Path
 
 import pytest
-from bookman import Library, NullSource
+from bookmgr import Library, NullSource
 from textual.widgets import Static
 
 from textual.content import Content
 
-from bookman_tui import reveal
-from bookman_tui.app import BookmanApp, reload_summary
-from bookman_tui.reveal import folder_command
-from bookman_tui.screens.details import DetailsScreen
-from bookman_tui.store import Catalog
+from bookmgr_tui import reveal
+from bookmgr_tui.app import BookmgrApp, reload_summary
+from bookmgr_tui.reveal import folder_command
+from bookmgr_tui.screens.details import DetailsScreen
+from bookmgr_tui.store import Catalog
 
 
 async def test_browse_6_empty_library_invites_import(empty_library: Path) -> None:
-    app = BookmanApp(library=empty_library)
+    app = BookmgrApp(library=empty_library)
     async with app.run_test() as pilot:
         await app.workers.wait_for_complete()
         await pilot.pause()
@@ -28,7 +28,7 @@ async def test_browse_6_empty_library_invites_import(empty_library: Path) -> Non
 
 
 async def test_browse_4_status_line_counts_books_and_queue(empty_library: Path) -> None:
-    app = BookmanApp(library=empty_library)
+    app = BookmgrApp(library=empty_library)
     async with app.run_test() as pilot:
         await app.workers.wait_for_complete()
         await pilot.pause()
@@ -36,7 +36,7 @@ async def test_browse_4_status_line_counts_books_and_queue(empty_library: Path) 
 
 
 async def test_g_5_q_quits_from_browser(empty_library: Path) -> None:
-    app = BookmanApp(library=empty_library)
+    app = BookmgrApp(library=empty_library)
     async with app.run_test() as pilot:
         await pilot.press("q")
         assert app.return_code == 0
@@ -44,7 +44,7 @@ async def test_g_5_q_quits_from_browser(empty_library: Path) -> None:
 
 
 async def test_browse_4_status_line_counts_the_mock_library(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test() as pilot:
         await app.workers.wait_for_complete()
         await pilot.pause()
@@ -52,7 +52,7 @@ async def test_browse_4_status_line_counts_the_mock_library(mock_root: Path) -> 
 
 
 async def test_browse_5_reload_confirms_with_a_notification(mock_root: Path, monkeypatch) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     notices: list[str] = []
     monkeypatch.setattr(app, "notify", lambda message, **kwargs: notices.append(message))
     async with app.run_test() as pilot:
@@ -101,7 +101,7 @@ def test_browse_11_folder_command_per_platform(tmp_path: Path) -> None:
 
 
 async def test_browse_11_f_opens_the_selected_books_folder(mock_root: Path, monkeypatch) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 30)) as pilot:
         opened, notices = await open_with_folders(mock_root, monkeypatch, pilot)
         book = app.screen.selected_book
@@ -112,7 +112,7 @@ async def test_browse_11_f_opens_the_selected_books_folder(mock_root: Path, monk
 
 
 async def test_browse_11_f_on_the_narrow_details_screen(mock_root: Path, monkeypatch) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(80, 30)) as pilot:
         opened, _ = await open_with_folders(mock_root, monkeypatch, pilot)
         book = app.screen.selected_book
@@ -123,7 +123,7 @@ async def test_browse_11_f_on_the_narrow_details_screen(mock_root: Path, monkeyp
 
 
 async def test_browse_11_a_folder_gone_since_loading_is_reported(mock_root: Path, monkeypatch) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 30)) as pilot:
         opened, notices = await open_with_folders(mock_root, monkeypatch, pilot)
         book = app.screen.selected_book
@@ -139,7 +139,7 @@ async def test_browse_11_a_command_that_cant_run_is_reported(mock_root: Path, mo
     def missing(folder: Path) -> None:
         raise FileNotFoundError(2, "No such file or directory", "xdg-open")
 
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 30)) as pilot:
         _, notices = await open_with_folders(mock_root, monkeypatch, pilot)
         monkeypatch.setattr(reveal, "open_folder", missing)
@@ -148,7 +148,7 @@ async def test_browse_11_a_command_that_cant_run_is_reported(mock_root: Path, mo
 
 
 async def test_browse_13_f_works_while_a_change_runs(mock_root: Path, monkeypatch) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 30)) as pilot:
         opened, notices = await open_with_folders(mock_root, monkeypatch, pilot)
         app.writing = "Looking up “Dune”."

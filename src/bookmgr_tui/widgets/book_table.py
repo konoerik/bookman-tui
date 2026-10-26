@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from bookman import Book
+from bookmgr import Book
 from rich.cells import cell_len
 from rich.text import Text
 from textual.binding import Binding
@@ -11,7 +11,7 @@ from textual.events import Resize
 from textual.message import Message
 from textual.widgets import DataTable
 
-from bookman_tui.store import BookRow, GroupHeader, Row
+from bookmgr_tui.store import BookRow, GroupHeader, Row
 
 TITLE_MIN = 20
 AUTHOR_MIN = 10
@@ -40,7 +40,7 @@ class BookTable(DataTable):
     Columns: title, author, formats, and a review marker (BROWSE-1):
     - title: `Book.title`; a long one is cut with "…"
     - author: `Book.author`, or blank; cut the same way
-    - formats: the kinds in bookman's order, e.g. `EPUB PDF`; never cut
+    - formats: the kinds in bookmgr's order, e.g. `EPUB PDF`; never cut
     - review: `?` (warning colour) when `Book.needs_review`, else blank
 
     `j`/`k` move the cursor as the arrows do (BROWSE-2). The cursor never

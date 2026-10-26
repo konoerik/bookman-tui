@@ -6,19 +6,19 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from bookman import Book, Config, Library, MetadataSourceError, NullSource, save_config
+from bookmgr import Book, Config, Library, MetadataSourceError, NullSource, save_config
 from mock_library import MockSource, Record, Spec, isbn13, write_epub
 from textual.widgets import Button, Input, Static
 
-from bookman_tui.app import BookmanApp
-from bookman_tui.curating import batch_summary, could_help, edit_changes, lookup_summary
-from bookman_tui.importing import ImportJob
-from bookman_tui.prefs import load_prefs
-from bookman_tui.screens.browser import BrowserScreen
-from bookman_tui.screens.edit_dialog import EditDialog, LookupBox
-from bookman_tui.screens.import_screen import ImportScreen
-from bookman_tui.store import Grouping
-from bookman_tui.widgets.book_detail import BookDetail
+from bookmgr_tui.app import BookmgrApp
+from bookmgr_tui.curating import batch_summary, could_help, edit_changes, lookup_summary
+from bookmgr_tui.importing import ImportJob
+from bookmgr_tui.prefs import load_prefs
+from bookmgr_tui.screens.browser import BrowserScreen
+from bookmgr_tui.screens.edit_dialog import EditDialog, LookupBox
+from bookmgr_tui.screens.import_screen import ImportScreen
+from bookmgr_tui.store import Grouping
+from bookmgr_tui.widgets.book_detail import BookDetail
 
 DUNE = Spec("Dune", "Frank Herbert", isbn13(1), record=Record("Dune", "Frank Herbert"))
 HOBBIT = Spec("The Hobbit", "J. R. R. Tolkien", isbn13(2), record=Record("The Hobbit", "John Ronald Reuel Tolkien"))
@@ -36,7 +36,7 @@ FOUND = MockSource(
 
 class Unreachable:
     """Every request fails, as without a network (not a `NullSource`, which
-    bookman takes as lookups off) [bookman 1.3.0 @ 1bdad64]."""
+    bookmgr takes as lookups off) [bookman 1.3.0 @ 1bdad64]."""
 
     def lookup_by_isbn(self, isbn: str):
         raise MetadataSourceError("network unreachable")
@@ -66,18 +66,18 @@ def library(tmp_path: Path) -> Path:
     return root
 
 
-async def settle(app: BookmanApp, pilot) -> None:
+async def settle(app: BookmgrApp, pilot) -> None:
     await app.workers.wait_for_complete()
     await pilot.pause()
     await app.workers.wait_for_complete()
     await pilot.pause()
 
 
-def book(app: BookmanApp, title: str) -> Book:
+def book(app: BookmgrApp, title: str) -> Book:
     return next(b for b in app.catalog if b.title == title)
 
 
-async def start(app: BookmanApp, pilot, root: Path, select: str, source=SOURCE) -> list[str]:
+async def start(app: BookmgrApp, pilot, root: Path, select: str, source=SOURCE) -> list[str]:
     """Open the library with `source`, select the book titled `select`, and
     collect notifications."""
     await settle(app, pilot)
@@ -89,11 +89,11 @@ async def start(app: BookmanApp, pilot, root: Path, select: str, source=SOURCE) 
     return notices
 
 
-def field(app: BookmanApp, name: str) -> Input:
+def field(app: BookmgrApp, name: str) -> Input:
     return app.screen.query_one(f"#edit-{name}", Input)
 
 
-async def type_into(app: BookmanApp, pilot, name: str, value: str) -> None:
+async def type_into(app: BookmgrApp, pilot, name: str, value: str) -> None:
     field(app, name).value = value
     await pilot.pause()
 
@@ -130,7 +130,7 @@ def test_lookup_2_summary_names_what_changed(library: Path) -> None:
 
 
 async def test_edit_1_e_opens_the_dialog_with_what_helps(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test(size=(120, 50)) as pilot:
         await start(app, pilot, library, "deep_work_newport")
         await pilot.press("e")
@@ -145,7 +145,7 @@ async def test_edit_1_e_opens_the_dialog_with_what_helps(library: Path) -> None:
 
 
 async def test_edit_2_offers_the_sources_spelling(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test(size=(120, 50)) as pilot:
         await start(app, pilot, library, "The Hobbit")
         await pilot.press("e")
@@ -154,7 +154,7 @@ async def test_edit_2_offers_the_sources_spelling(library: Path) -> None:
 
 
 async def test_edit_3_unchanged_save_closes_without_marking_reviewed(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         notices = await start(app, pilot, library, "Emma")
         await pilot.press("e", "enter")
@@ -165,7 +165,7 @@ async def test_edit_3_unchanged_save_closes_without_marking_reviewed(library: Pa
 
 
 async def test_edit_3_esc_cancels(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         await start(app, pilot, library, "Emma")
         await pilot.press("e")
@@ -177,7 +177,7 @@ async def test_edit_3_esc_cancels(library: Path) -> None:
 
 
 async def test_edit_4_empty_title_is_refused_inline(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test(size=(120, 50)) as pilot:
         await start(app, pilot, library, "Emma")
         await pilot.press("e")
@@ -189,7 +189,7 @@ async def test_edit_4_empty_title_is_refused_inline(library: Path) -> None:
 
 
 async def test_edit_5_invalid_isbn_is_refused_inline_keeping_what_was_typed(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test(size=(120, 50)) as pilot:
         await start(app, pilot, library, "Emma")
         await pilot.press("e")
@@ -207,7 +207,7 @@ async def test_edit_5_invalid_isbn_is_refused_inline_keeping_what_was_typed(libr
 async def test_edit_6_7_hardest_case_saves_then_looks_up(library: Path) -> None:
     """The book M10 was designed for: no title or author in the file, not
     found online. Fixing both finds it."""
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         notices = await start(app, pilot, library, "deep_work_newport")
         book_id = book(app, "deep_work_newport").id
@@ -226,7 +226,7 @@ async def test_edit_6_7_hardest_case_saves_then_looks_up(library: Path) -> None:
 
 
 async def test_edit_7_unticked_saves_without_lookup_and_is_remembered(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         notices = await start(app, pilot, library, "deep_work_newport")
         await pilot.press("e")
@@ -244,7 +244,7 @@ async def test_edit_7_unticked_saves_without_lookup_and_is_remembered(library: P
 
 
 async def test_edit_8_no_lookup_when_it_cant_help(library: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         notices = await start(app, pilot, library, "Dune")
         monkeypatch.setattr(app.library, "reidentify", lambda *a, **k: pytest.fail("looked up"))
@@ -260,7 +260,7 @@ async def test_edit_8_no_lookup_when_it_cant_help(library: Path, monkeypatch: py
 
 
 async def test_lookup_1_2_l_looks_up_and_says_what_changed(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         notices = await start(app, pilot, library, "Emma", source=FOUND)
         emma = book(app, "Emma")
@@ -274,7 +274,7 @@ async def test_lookup_1_2_l_looks_up_and_says_what_changed(library: Path) -> Non
 
 
 async def test_lookup_1_detail_pane_shows_looking_up(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test(size=(120, 50)) as pilot:
         await start(app, pilot, library, "Emma")
         app.looking_up = frozenset({book(app, "Emma").id})
@@ -288,7 +288,7 @@ async def test_lookup_1_detail_pane_shows_looking_up(library: Path) -> None:
     [(Unreachable(), "Open Library can't be reached"), (NullSource(), "Lookups are off")],
 )
 async def test_lookup_2_failed_or_off_changes_nothing(library: Path, source, notice: str) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         notices = await start(app, pilot, library, "Emma", source=source)
         await pilot.press("l")
@@ -298,7 +298,7 @@ async def test_lookup_2_failed_or_off_changes_nothing(library: Path, source, not
 
 
 async def test_lookup_3_reviewed_book_keeps_its_fields(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         await start(app, pilot, library, "The Hobbit")
         await pilot.press("e")
@@ -314,7 +314,7 @@ async def test_lookup_3_reviewed_book_keeps_its_fields(library: Path) -> None:
 
 
 async def test_g_2_a_second_change_is_refused_while_one_runs(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         notices = await start(app, pilot, library, "Emma")
         app.writing = "Looking up “Dune”."
@@ -331,7 +331,7 @@ async def test_g_2_a_second_change_is_refused_while_one_runs(library: Path) -> N
 
 
 async def test_review_1_v_toggles_reviewed(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         await start(app, pilot, library, "Emma")
         await pilot.press("v")
@@ -344,7 +344,7 @@ async def test_review_1_v_toggles_reviewed(library: Path) -> None:
 
 
 async def test_review_2_v_works_through_the_needs_review_group(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         await start(app, pilot, library, "deep_work_newport")
         app.grouping = Grouping.STATUS
@@ -364,7 +364,7 @@ async def test_review_2_v_works_through_the_needs_review_group(library: Path) ->
 
 
 async def test_review_2_without_status_grouping_selection_follows_the_book(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         await start(app, pilot, library, "Emma")
         await pilot.press("v")
@@ -381,7 +381,7 @@ async def test_import_10_l_looks_up_the_books_imported_without_open_library(
     folder = tmp_path / "new"
     folder.mkdir()
     write_epub(folder / "deep-work.epub", DEEP_WORK)
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         notices = await start(app, pilot, library, "Emma", source=Unreachable())
         await pilot.press("i")

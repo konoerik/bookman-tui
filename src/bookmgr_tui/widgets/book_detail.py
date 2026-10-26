@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from bookman import Book, MatchBasis
+from bookmgr import Book, MatchBasis
 from textual.app import ComposeResult
 from textual.containers import Vertical, VerticalScroll
 from textual.events import Resize
@@ -18,8 +18,8 @@ from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Static
 
-from bookman_tui.location import sentence
-from bookman_tui.widgets.cover import Cover
+from bookmgr_tui.location import sentence
+from bookmgr_tui.widgets.cover import Cover
 
 MATCHED = {
     MatchBasis.ISBN: "matched online by ISBN",
@@ -65,7 +65,7 @@ class Trust:
         headline: The status in a few words.
         reasons: Why it needs review, most important first; empty unless the
             headline is "Needs review".
-        detail: For a reviewed book, how bookman had matched it, shown muted
+        detail: For a reviewed book, how bookmgr had matched it, shown muted
             under the headline; otherwise None.
     """
 
@@ -78,7 +78,7 @@ class Trust:
 def trust(book: Book) -> Trust:
     """The status line, first match wins (BROWSE-3):
 
-    1. `reviewed` → ✓ "Checked by you", with `detail` saying how bookman
+    1. `reviewed` → ✓ "Checked by you", with `detail` saying how bookmgr
        had matched it: "matched online by ISBN", "matched online by title
        and author", "matched online by title only", "not found online", or
        "couldn't read inside the file" (every format has a `read_issue`).
@@ -92,11 +92,11 @@ def trust(book: Book) -> Trust:
     3. `identified is ISBN` → ✓ "Matched online by ISBN".
     4. `identified is TITLE_AUTHOR` → ✓ "Matched online by title and author".
 
-    "Not found online" also covers a lookup that failed (offline): bookman
+    "Not found online" also covers a lookup that failed (offline): bookmgr
     can't tell them apart yet (FLOWS *Open questions*, LOOKUP-2).
 
     Raises:
-        ValueError: For a combination bookman's `needs_review` rule rules
+        ValueError: For a combination bookmgr's `needs_review` rule rules
             out (not reviewed, not in the queue, and not identified by ISBN
             or title and author); that would be a bug, not user data.
     """
@@ -128,7 +128,7 @@ def author_note(book: Book) -> str | None:
     Different means different after ignoring case, spacing and the
     punctuation between initials: "J. R. R. Tolkien" and "J.R.R. Tolkien"
     are the same spelling, so no note. A book with no `author` but a
-    `record_author` gets no note either: bookman already filled the author
+    `record_author` gets no note either: bookmgr already filled the author
     from the record (IDENT-6).
     """
     if not book.author or not book.record_author:
@@ -139,7 +139,7 @@ def author_note(book: Book) -> str | None:
 
 
 def files_text(book: Book) -> str:
-    """One line per format, `EPUB  Dune.epub`, with bookman's advice in amber
+    """One line per format, `EPUB  Dune.epub`, with bookmgr's advice in amber
     under a format it couldn't read (BROWSE-3); markup."""
     lines = []
     for fmt in book.formats:
@@ -176,7 +176,7 @@ class BookDetail(Widget):
     - `author_note`, muted, when there is one
     - "Files": one line per format, `EPUB  Dune.epub`; a format with a
       `read_issue` gets its advice under it, sentence-cased, in amber
-      (until bookman's short `ReadIssue.summary` lands)
+      (until bookmgr's short `ReadIssue.summary` lands)
 
     While `busy`, "Looking up…" shows under the trust line (LOOKUP-1).
 

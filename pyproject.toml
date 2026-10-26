@@ -1,7 +1,7 @@
 [project]
-name = "bookman-tui"
-version = "1.0.0"
-description = "Textual terminal front end for the bookman ebook library."
+name = "bookmgr-tui"
+version = "2.0.0"
+description = "Textual terminal front end for the bookmgr ebook library."
 readme = "README.md"
 authors = [
     { name = "Erikton Konomi", email = "konoerik@gmail.com" }
@@ -19,18 +19,18 @@ classifiers = [
     "Topic :: Utilities",
 ]
 dependencies = [
-    "bookman[crypto] @ git+https://github.com/konoerik/bookman.git@v1.3.0",
+    "bookmgr[crypto]>=2.0",
     "textual>=8.2.8",
     "textual-image>=0.12.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/konoerik/bookman-tui"
-Repository = "https://github.com/konoerik/bookman-tui"
-Issues = "https://github.com/konoerik/bookman-tui/issues"
+Homepage = "https://github.com/konoerik/bookmgr-tui"
+Repository = "https://github.com/konoerik/bookmgr-tui"
+Issues = "https://github.com/konoerik/bookmgr-tui/issues"
 
 [project.scripts]
-bookman-tui = "bookman_tui:main"
+bookmgr-tui = "bookmgr_tui:main"
 
 [build-system]
 requires = ["uv_build>=0.10.7,<0.11.0"]

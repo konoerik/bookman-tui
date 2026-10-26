@@ -6,12 +6,12 @@ import dataclasses
 from pathlib import Path
 
 import pytest
-from bookman import Book, Library, NullSource
+from bookmgr import Book, Library, NullSource
 from textual.widgets import Input, Static
 
-from bookman_tui.app import BookmanApp
-from bookman_tui.store import BookRow, Catalog, match_summary, matched_fields, matches
-from bookman_tui.widgets.book_table import BookTable
+from bookmgr_tui.app import BookmgrApp
+from bookmgr_tui.store import BookRow, Catalog, match_summary, matched_fields, matches
+from bookmgr_tui.widgets.book_table import BookTable
 
 
 def rows(books) -> list[BookRow]:
@@ -74,7 +74,7 @@ def test_find_7_summary_singular_and_isbn(catalog: Catalog) -> None:
     )
 
 
-async def loaded(app: BookmanApp, pilot) -> BookTable:
+async def loaded(app: BookmgrApp, pilot) -> BookTable:
     await app.workers.wait_for_complete()
     await pilot.pause()
     return app.screen.query_one(BookTable)
@@ -89,14 +89,14 @@ def listed(table: BookTable) -> list[str]:
     return [str(table.get_row(key)[1]) for key in table.rows]
 
 
-def selected_title(app: BookmanApp) -> str | None:
+def selected_title(app: BookmgrApp) -> str | None:
     book_id = app.screen.query_one(BookTable).selected_id
     book = app.catalog.get(book_id) if app.catalog and book_id else None
     return book.title if book else None
 
 
 async def test_find_1_typing_narrows_the_list_and_counts_it(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 30)) as pilot:
         table = await loaded(app, pilot)
         box = app.screen.query_one("#search", Input)
@@ -109,7 +109,7 @@ async def test_find_1_typing_narrows_the_list_and_counts_it(mock_root: Path) -> 
 
 
 async def test_find_1_enter_returns_to_the_list_and_the_box_stays(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 30)) as pilot:
         table = await loaded(app, pilot)
         await search_for(pilot, "weir")
@@ -122,7 +122,7 @@ async def test_find_1_enter_returns_to_the_list_and_the_box_stays(mock_root: Pat
 
 
 async def test_find_1_letters_type_into_the_box_instead_of_acting(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 30)) as pilot:
         await loaded(app, pilot)
         await search_for(pilot, "quiet")
@@ -132,7 +132,7 @@ async def test_find_1_letters_type_into_the_box_instead_of_acting(mock_root: Pat
 
 @pytest.mark.parametrize("from_list", [False, True])
 async def test_find_2_escape_clears_the_search(mock_root: Path, from_list: bool) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 30)) as pilot:
         table = await loaded(app, pilot)
         await search_for(pilot, "dune")
@@ -149,7 +149,7 @@ async def test_find_2_escape_clears_the_search(mock_root: Path, from_list: bool)
 
 
 async def test_find_5_no_match_names_the_search(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 30)) as pilot:
         table = await loaded(app, pilot)
         await search_for(pilot, "zzz[x]")
@@ -160,7 +160,7 @@ async def test_find_5_no_match_names_the_search(mock_root: Path) -> None:
 
 
 async def test_find_6_selection_stays_if_it_matches_else_first_match(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 30)) as pilot:
         table = await loaded(app, pilot)
         dune = next(book for book in app.catalog if book.title == "Dune Messiah")
@@ -175,7 +175,7 @@ async def test_find_6_selection_stays_if_it_matches_else_first_match(mock_root: 
 
 
 async def test_find_6_clearing_returns_to_the_book_selected_before(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 30)) as pilot:
         table = await loaded(app, pilot)
         hobbit = next(book for book in app.catalog if book.title == "The Hobbit")
@@ -188,7 +188,7 @@ async def test_find_6_clearing_returns_to_the_book_selected_before(mock_root: Pa
 
 
 async def test_find_6_book_that_stops_matching_leaves_and_next_is_selected(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 30)) as pilot:
         table = await loaded(app, pilot)
         await search_for(pilot, "dune")
@@ -204,7 +204,7 @@ async def test_find_6_book_that_stops_matching_leaves_and_next_is_selected(mock_
 
 
 async def test_find_7_counts_show_beside_the_box_and_hide_when_cleared(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 30)) as pilot:
         await loaded(app, pilot)
         counts = app.screen.query_one("#search-counts", Static)

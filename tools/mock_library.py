@@ -1,7 +1,7 @@
-"""Build a mock bookman library for visual review and tests.
+"""Build a mock bookmgr library for visual review and tests.
 
-Real EPUB and PDF files are written, then imported through bookman's public
-API with a scripted `MetadataSource`, so bookman itself builds the library:
+Real EPUB and PDF files are written, then imported through bookmgr's public
+API with a scripted `MetadataSource`, so bookmgr itself builds the library:
 offline, deterministic, and never coupled to its on-disk layout. The
 catalogue below is chosen to show every state the browser has to render.
 
@@ -25,7 +25,7 @@ import zlib
 from dataclasses import dataclass
 from pathlib import Path
 
-from bookman import Book, Candidate, Library
+from bookmgr import Book, Candidate, Library
 from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
@@ -52,7 +52,7 @@ class Spec:
     stem: str | None = None  # file name without suffix; defaults to the title
     pdf_author: str | None = "same"  # the PDF's own author, when it differs
     epub_cover: bool = False  # embed a cover in the EPUB (ADR-28 fallback)
-    password: bool = False  # a PDF bookman can't read inside (ReadIssue)
+    password: bool = False  # a PDF bookmgr can't read inside (ReadIssue)
     then: str | None = None  # "review": mark reviewed; "edit:<author>": edit it
 
 
@@ -107,7 +107,7 @@ CATALOGUE: list[Spec] = [
     Spec("Quarterly Garden Planner", None, kinds=("pdf",)),
     Spec("Untitled", None, kinds=("pdf",), stem="field-guide-to-moths"),
     Spec("Grandmother's Recipes", None, then="edit:Rosa Lindqvist"),
-    # --- Needs review: a PDF bookman can't read inside (named after its file)
+    # --- Needs review: a PDF bookmgr can't read inside (named after its file)
     Spec(None, None, kinds=("pdf",), stem="statement-reader-locked", password=True),
 ]
 # fmt: on

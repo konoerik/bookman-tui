@@ -1,7 +1,7 @@
 """The TUI's own display preferences, kept between sessions (BROWSE-10, ADR-7).
 
-Separate from bookman's config, which holds only what bookman owns (ADR-6):
-this file is the TUI's and bookman never reads it.
+Separate from bookmgr's config, which holds only what bookmgr owns (ADR-6):
+this file is the TUI's and bookmgr never reads it.
 """
 
 from __future__ import annotations
@@ -12,14 +12,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TypeVar
 
-from bookman import config_path
+from bookmgr import config_path
 
-from bookman_tui.store import Grouping, Sort
+from bookmgr_tui.store import Grouping, Sort
 
 _E = TypeVar("_E", Sort, Grouping)
 
-ENV_PREFS = "BOOKMAN_TUI_PREFS"
-"""Names the prefs file directly, like bookman's `$BOOKMAN_CONFIG`; tests and
+ENV_PREFS = "BOOKMGR_TUI_PREFS"
+"""Names the prefs file directly, like bookmgr's `$BOOKMGR_CONFIG`; tests and
 the `make try-*` sandboxes use it so they never touch the real one."""
 
 
@@ -40,10 +40,10 @@ class Prefs:
 
 
 def prefs_path() -> Path:
-    """Where the prefs file lives: `$BOOKMAN_TUI_PREFS` if set, else
-    `prefs.json` in a `bookman-tui` folder beside bookman's config folder
-    (same platform rules as `bookman.config_path`, its own folder). With
-    `$BOOKMAN_CONFIG` set, that is beside the folder it names.
+    """Where the prefs file lives: `$BOOKMGR_TUI_PREFS` if set, else
+    `prefs.json` in a `bookmgr-tui` folder beside bookmgr's config folder
+    (same platform rules as `bookmgr.config_path`, its own folder). With
+    `$BOOKMGR_CONFIG` set, that is beside the folder it names.
 
     Returns:
         The path; the file may not exist yet.
@@ -51,7 +51,7 @@ def prefs_path() -> Path:
     override = os.environ.get(ENV_PREFS)
     if override:
         return Path(override).expanduser()
-    return config_path().parent.parent / "bookman-tui" / "prefs.json"
+    return config_path().parent.parent / "bookmgr-tui" / "prefs.json"
 
 
 def load_prefs(path: Path | None = None) -> Prefs:

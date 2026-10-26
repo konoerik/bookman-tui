@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from pathlib import Path
 
-from bookman import Book, FormatConflictError, Library, MatchBasis
+from bookmgr import Book, FormatConflictError, Library, MatchBasis
 from rich.markup import escape
 from rich.text import Text
 from textual import on, work
@@ -28,10 +28,10 @@ from textual.widgets import (
 )
 from textual.widgets.selection_list import Selection
 
-from bookman_tui.importing import Entry, ImportJob, Mark, files_in_dot_folders, is_supported, outcome_line, survey
-from bookman_tui.keys import key, keys_line, press
-from bookman_tui.location import display_path, folder_text
-from bookman_tui.widgets.path_input import PathInput, format_choices
+from bookmgr_tui.importing import Entry, ImportJob, Mark, files_in_dot_folders, is_supported, outcome_line, survey
+from bookmgr_tui.keys import key, keys_line, press
+from bookmgr_tui.location import display_path, folder_text
+from bookmgr_tui.widgets.path_input import PathInput, format_choices
 
 SUPPORTED = "EPUB or PDF"
 
@@ -72,7 +72,7 @@ def conflict_text(conflict: FormatConflictError) -> str:
         f"keeping that file name, then press {key('ctrl+r')}."
     )
     if conflict.basis is MatchBasis.TITLE_ONLY:
-        advice += " If it's a different book, bookman can't keep them apart yet."
+        advice += " If it's a different book, bookmgr can't keep them apart yet."
     return (
         f"[b]{escape(conflict.source.name)}[/] matched [b]{escape(conflict.book.title)}[/] "
         f"({BASIS_WORDS.get(conflict.basis, conflict.basis.value)}), which already has "
@@ -81,7 +81,7 @@ def conflict_text(conflict: FormatConflictError) -> str:
 
 
 def failure_reason(path: Path, error: Exception) -> str:
-    """Why a file failed, without the path bookman's message starts with."""
+    """Why a file failed, without the path bookmgr's message starts with."""
     return str(error).removeprefix(f"{path}: ")
 
 
@@ -155,7 +155,7 @@ class ImportScreen(Screen):
         self.recursive = False
         self.whole_folder = True
         """Whether `iter_import` on the folder takes exactly the listed files,
-        so importing everything new can hand bookman the folder (IMPORT-3)."""
+        so importing everything new can hand bookmgr the folder (IMPORT-3)."""
         self.logged = 0
         """Job log events already written to the RichLog."""
         self.shown: set[Path] = set()
@@ -260,7 +260,7 @@ class ImportScreen(Screen):
         if path.is_dir():
             return f"Folder {escape(display_path(path))}. " + press("Enter", "see what's in it"), False
         if not is_supported(path):
-            return f"{escape(path.name)} isn't a format bookman reads ({SUPPORTED}).", True
+            return f"{escape(path.name)} isn't a format bookmgr reads ({SUPPORTED}).", True
         return f"File {escape(path.name)}. " + press("Enter", "import it"), False
 
     def show_path_hint(self, text: str, message: str | None = None, *, error: bool | None = None) -> None:

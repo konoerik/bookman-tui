@@ -8,9 +8,9 @@ from textual.binding import Binding
 from textual.content import Content
 from textual.widgets import Static
 
-from bookman_tui.app import BookmanApp
-from bookman_tui.keys import key, key_name, keys_line, press
-from bookman_tui.screens.setup import assess
+from bookmgr_tui.app import BookmgrApp
+from bookmgr_tui.keys import key, key_name, keys_line, press
+from bookmgr_tui.screens.setup import assess
 
 
 def test_g_7_keys_spelled_one_way() -> None:
@@ -33,7 +33,7 @@ def test_g_7_a_key_is_drawn_bold() -> None:
 
 
 def test_g_7_footer_says_esc_and_ctrl_r() -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     assert app.get_key_display(Binding("escape", "back", "Back")) == "Esc"
     assert app.get_key_display(Binding("ctrl+r", "reload", "Reload")) == "ctrl+r"
     assert app.get_key_display(Binding("question_mark", "help", "Keys", key_display="?")) == "?"

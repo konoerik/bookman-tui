@@ -1,4 +1,4 @@
-"""Textual front end for the bookman ebook library."""
+"""Textual front end for the bookmgr ebook library."""
 
 from __future__ import annotations
 
@@ -7,20 +7,20 @@ from pathlib import Path
 
 
 def main(argv: list[str] | None = None) -> None:
-    """Run the app: `bookman-tui [--library DIR]` (START-1)."""
+    """Run the app: `bookmgr-tui [--library DIR]` (START-1)."""
     parser = argparse.ArgumentParser(
-        prog="bookman-tui",
-        description="Browse, search, import into and curate a bookman ebook library.",
+        prog="bookmgr-tui",
+        description="Browse, search, import into and curate a bookmgr ebook library.",
     )
     parser.add_argument(
         "--library",
         type=Path,
         metavar="DIR",
-        help="open this library instead of $BOOKMAN_LIBRARY or the saved one",
+        help="open this library instead of $BOOKMGR_LIBRARY or the saved one",
     )
     args = parser.parse_args(argv)
 
-    from bookman_tui.app import BookmanApp
+    from bookmgr_tui.app import BookmgrApp
 
     library = args.library.expanduser().absolute() if args.library else None
-    BookmanApp(library=library).run()
+    BookmgrApp(library=library).run()

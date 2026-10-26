@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from bookman import Book, BookmanError
+from bookmgr import Book, BookmgrError
 from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -11,9 +11,9 @@ from textual.markup import escape
 from textual.screen import ModalScreen
 from textual.widgets import Button, Checkbox, Input, Label, Static
 
-from bookman_tui.curating import edit_changes
-from bookman_tui.location import sentence
-from bookman_tui.widgets.book_detail import author_note, files_text, trust_text
+from bookmgr_tui.curating import edit_changes
+from bookmgr_tui.location import sentence
+from bookmgr_tui.widgets.book_detail import author_note, files_text, trust_text
 
 
 class LookupBox(Checkbox, inherit_bindings=False):
@@ -25,7 +25,7 @@ class LookupBox(Checkbox, inherit_bindings=False):
 
 class EditDialog(ModalScreen[bool]):
     """Title, author and ISBN of one book, under what helps work out what the
-    book is (EDIT-1). Dismissed with True once bookman has saved the edit,
+    book is (EDIT-1). Dismissed with True once bookmgr has saved the edit,
     False when cancelled or nothing changed.
 
     The App runs the save (ADR-4) and calls `refused` or dismisses the
@@ -106,8 +106,8 @@ class EditDialog(ModalScreen[bool]):
         if not self.query_one("#edit-dialog").disabled:
             self.dismiss(False)
 
-    def refused(self, error: BookmanError) -> None:
-        """bookman refused the edit (EDIT-5, G-4): say why, keep what was
+    def refused(self, error: BookmgrError) -> None:
+        """bookmgr refused the edit (EDIT-5, G-4): say why, keep what was
         typed, and put focus on the field it's about."""
         self.query_one("#edit-dialog").disabled = False
         message = str(error)

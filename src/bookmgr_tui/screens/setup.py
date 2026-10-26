@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from bookman import (
-    BookmanError,
+from bookmgr import (
+    BookmgrError,
     Config,
     ConfigError,
     configured_library,
@@ -26,12 +26,12 @@ from textual.reactive import reactive
 from textual.screen import Screen
 from textual.widgets import Footer, Header, Input, Static
 
-from bookman_tui.keys import key, press
-from bookman_tui.location import display_path
-from bookman_tui.widgets.path_input import PathInput, format_choices
+from bookmgr_tui.keys import key, press
+from bookmgr_tui.location import display_path
+from bookmgr_tui.widgets.path_input import PathInput, format_choices
 
 NOT_EMPTY = (
-    "A library needs an empty folder: bookman fills it with its own copies of "
+    "A library needs an empty folder: bookmgr fills it with its own copies of "
     "your books. Choose a new or empty folder, then import from this one."
 )
 
@@ -197,14 +197,14 @@ class SetupScreen(Screen):
             try:
                 current = load_config()
             except ConfigError:
-                # START-4: bookman reads the config to open any library, so
+                # START-4: bookmgr reads the config to open any library, so
                 # an unreadable one is replaced before opening.
                 save_config(Config(library=path))
                 current = None
             configured_library(path, create=create)
             saved = dataclasses.replace(current, library=path) if current else Config(library=path)
             save_config(saved)
-        except (BookmanError, OSError) as error:
+        except (BookmgrError, OSError) as error:
             self.confirming = False
             self.show(Assessment(Choice.REFUSE, path, f"Can't use this folder: {escape(str(error))}"), error=True)
             return

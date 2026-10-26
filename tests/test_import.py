@@ -5,16 +5,16 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from bookman import Config, Library, LookupOutcome, MetadataSourceError, NullSource, save_config
+from bookmgr import Config, Library, LookupOutcome, MetadataSourceError, NullSource, save_config
 from mock_library import Spec, isbn13, write_epub, write_pdf
 from textual.content import Content
 from textual.widgets import Checkbox, Input, Static
 
-from bookman_tui.app import BookmanApp
-from bookman_tui.importing import ImportJob, Mark, files_in_dot_folders, folder_files, survey
-from bookman_tui.location import display_path
-from bookman_tui.screens.browser import BrowserScreen
-from bookman_tui.screens.import_screen import ImportScreen, PreviewList, Stage
+from bookmgr_tui.app import BookmgrApp
+from bookmgr_tui.importing import ImportJob, Mark, files_in_dot_folders, folder_files, survey
+from bookmgr_tui.location import display_path
+from bookmgr_tui.screens.browser import BrowserScreen
+from bookmgr_tui.screens.import_screen import ImportScreen, PreviewList, Stage
 
 DUNE = Spec("Dune", "Frank Herbert", isbn13(1))
 EMMA = Spec("Emma", "Jane Austen", isbn13(2))
@@ -44,21 +44,21 @@ def downloads(tmp_path: Path) -> Path:
     return folder
 
 
-async def settle(app: BookmanApp, pilot) -> None:
+async def settle(app: BookmgrApp, pilot) -> None:
     await app.workers.wait_for_complete()
     await pilot.pause()
     await app.workers.wait_for_complete()
     await pilot.pause()
 
 
-async def open_import(app: BookmanApp, pilot) -> ImportScreen:
+async def open_import(app: BookmgrApp, pilot) -> ImportScreen:
     await settle(app, pilot)
     await pilot.press("i")
     assert isinstance(app.screen, ImportScreen)
     return app.screen
 
 
-async def submit_path(app: BookmanApp, pilot, path: Path | str) -> None:
+async def submit_path(app: BookmgrApp, pilot, path: Path | str) -> None:
     app.screen.query_one("#import-path", Input).value = str(path)
     await pilot.press("enter")
     await settle(app, pilot)
@@ -69,7 +69,7 @@ def text(screen, selector: str) -> str:
 
 
 async def test_import_1_i_opens_the_import_screen_and_esc_closes_it(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         assert app.focused is screen.query_one("#import-path")
@@ -81,7 +81,7 @@ async def test_import_1_path_is_prefilled_with_the_current_folder(
     library: Path, downloads: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(downloads.parent)
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         field = screen.query_one("#import-path", Input)
@@ -95,20 +95,20 @@ async def test_import_1_path_is_prefilled_with_the_current_folder(
 async def test_import_2_missing_path_and_unsupported_file_are_inline_errors(
     library: Path, downloads: Path
 ) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         await submit_path(app, pilot, downloads / "nope.epub")
         assert text(screen, "#import-hint").startswith("Nothing at")
         assert screen.query_one("#import-hint").has_class("error")
         await submit_path(app, pilot, downloads / "notes.mobi")
-        assert "isn't a format bookman reads" in text(screen, "#import-hint")
+        assert "isn't a format bookmgr reads" in text(screen, "#import-hint")
         assert screen.stage is Stage.PATH
         assert app.import_job is None
 
 
 async def test_import_2_single_file_starts_at_once(library: Path, downloads: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         await submit_path(app, pilot, downloads / "dune.epub")
@@ -120,7 +120,7 @@ async def test_import_2_single_file_already_in_library_starts_nothing(
     library: Path, downloads: Path
 ) -> None:
     Library(library, source=NullSource()).import_file(downloads / "dune.epub")
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         await submit_path(app, pilot, downloads / "dune.epub")
@@ -146,7 +146,7 @@ async def test_import_3_folder_opens_a_preview_with_new_files_ticked(
     library: Path, downloads: Path
 ) -> None:
     Library(library, source=NullSource()).import_file(downloads / "emma.epub")
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         await submit_path(app, pilot, downloads)
@@ -166,7 +166,7 @@ async def test_import_3_folder_opens_a_preview_with_new_files_ticked(
 
 
 async def test_import_3_space_unticks_and_a_toggles_all(library: Path, downloads: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         await submit_path(app, pilot, downloads)
@@ -182,7 +182,7 @@ async def test_import_3_space_unticks_and_a_toggles_all(library: Path, downloads
 
 
 async def test_import_3_slash_filters_by_file_name(library: Path, downloads: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         await submit_path(app, pilot, downloads)
@@ -199,7 +199,7 @@ async def test_import_3_slash_filters_by_file_name(library: Path, downloads: Pat
 
 
 async def test_import_3_a_subset_imports_only_the_ticked_files(library: Path, downloads: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         await submit_path(app, pilot, downloads)
@@ -225,7 +225,7 @@ def nested(downloads: Path) -> Path:
 
 
 async def test_import_1_ctrl_s_toggles_subfolders_while_typing(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         box = screen.query_one("#import-recursive", Checkbox)
@@ -237,7 +237,7 @@ async def test_import_1_ctrl_s_toggles_subfolders_while_typing(library: Path) ->
 
 
 async def test_import_1_subfolders_checkbox_sits_under_the_hint(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         path, hint, box = (screen.query_one(s).region.y for s in ("#import-path", "#import-hint", "#import-recursive"))
@@ -253,7 +253,7 @@ def test_import_3_dot_files_and_dot_folders_are_left_out(nested: Path) -> None:
 
 
 async def test_import_3_subfolders_listed_without_dot_folders(library: Path, nested: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         await pilot.press("ctrl+s")
@@ -263,7 +263,7 @@ async def test_import_3_subfolders_listed_without_dot_folders(library: Path, nes
 
 
 async def test_import_3_everything_new_skips_dot_folder_books(library: Path, nested: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         await pilot.press("ctrl+s")
@@ -277,7 +277,7 @@ async def test_import_3_everything_new_skips_dot_folder_books(library: Path, nes
 
 
 async def test_import_7_bad_file_is_counted_and_the_rest_import(library: Path, downloads: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         await submit_path(app, pilot, downloads)
@@ -291,7 +291,7 @@ async def test_import_7_bad_file_is_counted_and_the_rest_import(library: Path, d
 
 class Unreachable:
     """A source whose every request fails, as without a network. Not a
-    `NullSource`: bookman takes that as offline [bookman 1.3.0 @ 1bdad64]."""
+    `NullSource`: bookmgr takes that as offline [bookman 1.3.0 @ 1bdad64]."""
 
     def lookup_by_isbn(self, isbn: str):
         raise MetadataSourceError("network unreachable")
@@ -304,7 +304,7 @@ class Unreachable:
 
 
 async def test_import_5_esc_while_running_stays_and_hints_x(library: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         app.import_job = ImportJob(total=3)  # running: not finished
@@ -321,7 +321,7 @@ async def test_import_5_esc_while_running_stays_and_hints_x(library: Path) -> No
 async def test_import_8_unreachable_lookup_notifies_once_and_carries_on(
     library: Path, downloads: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     notices: list[str] = []
     async with app.run_test() as pilot:
         await open_import(app, pilot)
@@ -339,7 +339,7 @@ async def test_import_8_unreachable_lookup_notifies_once_and_carries_on(
 
 
 async def test_import_6_x_stops_after_the_current_file(library: Path, downloads: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         await open_import(app, pilot)
         job = ImportJob(folder=downloads)
@@ -357,7 +357,7 @@ async def test_import_9_conflict_explains_what_to_do(library: Path, tmp_path: Pa
     folder.mkdir()
     write_epub(folder / "dune-a.epub", DUNE)
     write_epub(folder / "dune-b.epub", Spec("Dune", "Frank Herbert", DUNE.isbn, epub_cover=True))
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         await submit_path(app, pilot, folder)
@@ -372,7 +372,7 @@ async def test_import_9_conflict_explains_what_to_do(library: Path, tmp_path: Pa
 async def test_import_10_enter_returns_to_the_browser_on_the_first_import(
     library: Path, downloads: Path
 ) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         await submit_path(app, pilot, downloads)
@@ -392,7 +392,7 @@ async def test_import_10_enter_returns_to_the_browser_on_the_first_import(
 
 async def test_import_10_already_in_library_is_listed(library: Path, downloads: Path) -> None:
     Library(library, source=NullSource()).import_file(downloads / "emma.epub")
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         await open_import(app, pilot)
         app.start_import(ImportJob(folder=downloads))
@@ -403,7 +403,7 @@ async def test_import_10_already_in_library_is_listed(library: Path, downloads: 
 
 
 async def test_g_5_quit_is_refused_while_importing(library: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     notices: list[str] = []
     monkeypatch.setattr(app, "notify", lambda message, **kwargs: notices.append(message))
     async with app.run_test() as pilot:
@@ -418,7 +418,7 @@ async def test_g_5_quit_is_refused_while_importing(library: Path, monkeypatch: p
 async def test_import_10_back_to_library_button_returns_to_the_browser(
     library: Path, downloads: Path
 ) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test(size=(110, 34)) as pilot:
         await open_import(app, pilot)
         app.start_import(ImportJob(files=[downloads / "dune.epub"]))
@@ -433,7 +433,7 @@ async def test_import_10_back_to_library_button_returns_to_the_browser(
 async def test_import_3_filter_is_a_view_enter_imports_every_ticked_file(
     library: Path, downloads: Path
 ) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         screen = await open_import(app, pilot)
         await submit_path(app, pilot, downloads)

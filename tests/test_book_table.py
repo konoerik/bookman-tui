@@ -6,9 +6,9 @@ import dataclasses
 from pathlib import Path
 
 
-from bookman_tui.app import BookmanApp
-from bookman_tui.store import BookRow
-from bookman_tui.widgets.book_table import AUTHOR_MIN, TITLE_MIN, BookTable, share_widths
+from bookmgr_tui.app import BookmgrApp
+from bookmgr_tui.store import BookRow
+from bookmgr_tui.widgets.book_table import AUTHOR_MIN, TITLE_MIN, BookTable, share_widths
 
 
 def rows(books) -> list[BookRow]:
@@ -16,11 +16,11 @@ def rows(books) -> list[BookRow]:
 
 
 async def open_mock(mock_root: Path, size=(120, 30)):
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     return app, app.run_test(size=size)
 
 
-async def loaded(app: BookmanApp, pilot) -> BookTable:
+async def loaded(app: BookmgrApp, pilot) -> BookTable:
     await app.workers.wait_for_complete()
     await pilot.pause()
     return app.screen.query_one(BookTable)
@@ -34,7 +34,7 @@ def row_of(table: BookTable, title: str) -> list:
     raise AssertionError(f"no row titled {title!r}")
 
 
-def title_of(app: BookmanApp, book_id: str | None) -> str | None:
+def title_of(app: BookmgrApp, book_id: str | None) -> str | None:
     assert app.catalog is not None
     book = app.catalog.get(book_id) if book_id else None
     return book.title if book else None

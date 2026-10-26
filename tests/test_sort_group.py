@@ -7,12 +7,12 @@ import json
 from pathlib import Path
 
 import pytest
-from bookman import Book, Library, NullSource
+from bookmgr import Book, Library, NullSource
 from textual.widgets import Static
 
-from bookman_tui.app import BookmanApp
-from bookman_tui.prefs import Prefs, load_prefs, prefs_path, save_prefs
-from bookman_tui.store import (
+from bookmgr_tui.app import BookmgrApp
+from bookmgr_tui.prefs import Prefs, load_prefs, prefs_path, save_prefs
+from bookmgr_tui.store import (
     CHECKED_BY_YOU,
     MATCHED_ONLINE,
     NEEDS_REVIEW,
@@ -25,8 +25,8 @@ from bookman_tui.store import (
     arrange,
     matches,
 )
-from bookman_tui.widgets.book_detail import trust
-from bookman_tui.widgets.book_table import BookTable
+from bookmgr_tui.widgets.book_detail import trust
+from bookmgr_tui.widgets.book_table import BookTable
 
 
 @pytest.fixture
@@ -165,13 +165,13 @@ def test_browse_9_row_keys_unique_when_a_book_is_listed_twice(catalog: Catalog) 
 # The browser ----------------------------------------------------------------
 
 
-async def loaded(app: BookmanApp, pilot) -> BookTable:
+async def loaded(app: BookmgrApp, pilot) -> BookTable:
     await app.workers.wait_for_complete()
     await pilot.pause()
     return app.screen.query_one(BookTable)
 
 
-def status(app: BookmanApp) -> str:
+def status(app: BookmgrApp) -> str:
     return str(app.screen.query_one("#status", Static).render())
 
 
@@ -183,7 +183,7 @@ def is_header(table: BookTable, row: int) -> bool:
     return cell_text(table, row)[1].startswith("── ")
 
 
-def selected_title(app: BookmanApp) -> str | None:
+def selected_title(app: BookmgrApp) -> str | None:
     table = app.screen.query_one(BookTable)
     assert app.catalog is not None
     book = app.catalog.get(table.selected_id) if table.selected_id else None
@@ -191,7 +191,7 @@ def selected_title(app: BookmanApp) -> str | None:
 
 
 async def test_browse_8_o_reorders_the_list_and_keeps_the_selection(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 40)) as pilot:
         table = await loaded(app, pilot)
         await pilot.press("j", "j", "j")
@@ -205,7 +205,7 @@ async def test_browse_8_o_reorders_the_list_and_keeps_the_selection(mock_root: P
 
 
 async def test_browse_8_status_line_names_sort_and_grouping(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 40)) as pilot:
         await loaded(app, pilot)
         assert status(app) == "31 books · 6 need review · by title"
@@ -215,7 +215,7 @@ async def test_browse_8_status_line_names_sort_and_grouping(mock_root: Path) -> 
 
 
 async def test_browse_9_header_row_shows_label_and_size(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 40)) as pilot:
         table = await loaded(app, pilot)
         await pilot.press("g", "g")
@@ -226,7 +226,7 @@ async def test_browse_9_header_row_shows_label_and_size(mock_root: Path) -> None
 
 
 async def test_browse_9_j_k_skip_header_rows(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 40)) as pilot:
         table = await loaded(app, pilot)
         await pilot.press("g", "g", "ctrl+home")  # Status: 6 in review, then a header
@@ -248,7 +248,7 @@ async def test_browse_9_j_k_skip_header_rows(mock_root: Path) -> None:
 async def test_browse_9_top_bottom_and_first_load_land_on_a_book(mock_root: Path) -> None:
     (prefs_path()).parent.mkdir(parents=True)
     save_prefs(Prefs(grouping=Grouping.AUTHOR))
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 40)) as pilot:
         table = await loaded(app, pilot)
         assert table.cursor_row == 1 and app.screen.selected_id == table.selected_id
@@ -263,7 +263,7 @@ async def test_browse_9_top_bottom_and_first_load_land_on_a_book(mock_root: Path
 
 
 async def test_browse_9_g_keeps_the_selected_book(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 40)) as pilot:
         await loaded(app, pilot)
         await pilot.press(*"jjjjjjj")
@@ -275,7 +275,7 @@ async def test_browse_9_g_keeps_the_selected_book(mock_root: Path) -> None:
 
 
 async def test_browse_9_detail_pane_follows_book_rows_only(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 40)) as pilot:
         table = await loaded(app, pilot)
         await pilot.press("g")
@@ -291,7 +291,7 @@ async def test_browse_9_detail_pane_follows_book_rows_only(mock_root: Path) -> N
 
 
 async def test_browse_9_search_within_groups_in_the_browser(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 40)) as pilot:
         table = await loaded(app, pilot)
         await pilot.press("g", "g", "g")  # Format
@@ -305,12 +305,12 @@ async def test_browse_9_search_within_groups_in_the_browser(mock_root: Path) -> 
 
 
 async def test_browse_10_sort_and_grouping_survive_a_restart(mock_root: Path) -> None:
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     async with app.run_test(size=(120, 40)) as pilot:
         await loaded(app, pilot)
         await pilot.press("o", "g", "g", "g")
         await pilot.pause()
-    again = BookmanApp(library=mock_root)
+    again = BookmgrApp(library=mock_root)
     async with again.run_test(size=(120, 40)) as pilot:
         await loaded(again, pilot)
         assert (again.sort, again.grouping) == (Sort.AUTHOR, Grouping.FORMAT)
@@ -318,11 +318,11 @@ async def test_browse_10_sort_and_grouping_survive_a_restart(mock_root: Path) ->
 
 
 def test_browse_10_prefs_path_honours_the_override(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("BOOKMAN_TUI_PREFS", str(tmp_path / "p.json"))
+    monkeypatch.setenv("BOOKMGR_TUI_PREFS", str(tmp_path / "p.json"))
     assert prefs_path() == tmp_path / "p.json"
-    monkeypatch.delenv("BOOKMAN_TUI_PREFS")
-    monkeypatch.setenv("BOOKMAN_CONFIG", str(tmp_path / "bookman" / "config.json"))
-    assert prefs_path() == tmp_path / "bookman-tui" / "prefs.json"
+    monkeypatch.delenv("BOOKMGR_TUI_PREFS")
+    monkeypatch.setenv("BOOKMGR_CONFIG", str(tmp_path / "bookmgr" / "config.json"))
+    assert prefs_path() == tmp_path / "bookmgr-tui" / "prefs.json"
 
 
 def test_browse_10_missing_or_bad_prefs_file_gives_defaults(tmp_path: Path) -> None:

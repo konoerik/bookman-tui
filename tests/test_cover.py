@@ -9,7 +9,7 @@ from PIL import Image as PILImage
 from textual.app import App, ComposeResult
 from textual.widgets import Static
 
-from bookman_tui.widgets.cover import Cover, Image
+from bookmgr_tui.widgets.cover import Cover, Image
 
 
 class CoverApp(App):

@@ -1,37 +1,37 @@
-# bookman-tui
+# bookmgr-tui
 
-A terminal front end for [bookman](https://github.com/konoerik/bookman), a
+A terminal front end for [bookmgr](https://github.com/konoerik/bookmgr), a
 local ebook library manager. Browse, search, import into and curate your
-library without leaving the terminal: work through the books bookman
+library without leaving the terminal: work through the books bookmgr
 couldn't identify, correct titles, authors and ISBNs, and look books up again
 online.
 
-![bookman-tui: browsing, searching, grouping by status and fixing a book that needs review](docs/demo.gif)
+![bookmgr-tui: browsing, searching, grouping by status and fixing a book that needs review](docs/demo.gif)
 
 Built with [Textual](https://textual.textualize.io). All library behaviour
-(identifying, fetching metadata, filing) lives in bookman; this app is the
+(identifying, fetching metadata, filing) lives in bookmgr; this app is the
 interface to it.
 
 ## Install
 
-Requires Python 3.10+. Neither bookman-tui nor bookman is on PyPI yet;
-install straight from GitHub with [uv](https://docs.astral.sh/uv/):
+Requires Python 3.10+. bookmgr-tui isn't on PyPI yet; install it straight
+from GitHub with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv tool install git+https://github.com/konoerik/bookman-tui
+uv tool install git+https://github.com/konoerik/bookmgr-tui
 ```
 
-This pulls in bookman at the release bookman-tui is pinned to.
+This pulls in [bookmgr](https://pypi.org/project/bookmgr/) from PyPI.
 
 ## Usage
 
 ```bash
-bookman-tui                  # open your bookman library
-bookman-tui --library DIR    # open a different one
+bookmgr-tui                  # open your bookmgr library
+bookmgr-tui --library DIR    # open a different one
 ```
 
-It opens the same library the `bookman` command uses: `--library`, then
-`$BOOKMAN_LIBRARY`, then bookman's saved config. On first run, with nothing
+It opens the same library the `bookmgr` command uses: `--library`, then
+`$BOOKMGR_LIBRARY`, then bookmgr's saved config. On first run, with nothing
 configured, it asks where the library should go.
 
 Main keys in the library browser (press `?` for all of them):
@@ -53,14 +53,14 @@ Covers use the kitty or sixel graphics protocol where the terminal supports
 it (e.g. Ghostty, kitty, WezTerm, iTerm2) and fall back to block characters
 elsewhere.
 
-Sort and grouping are remembered in a `bookman-tui` folder next to bookman's
-config folder (`$BOOKMAN_TUI_PREFS` names the file directly).
+Sort and grouping are remembered in a `bookmgr-tui` folder next to bookmgr's
+config folder (`$BOOKMGR_TUI_PREFS` names the file directly).
 
 ## Development
 
 ```bash
-git clone git@github.com:konoerik/bookman-tui.git
-cd bookman-tui
+git clone git@github.com:konoerik/bookmgr-tui.git
+cd bookmgr-tui
 uv sync
 make test          # uv run pytest
 make dev           # run with hot reload + Textual devtools
@@ -74,19 +74,18 @@ never touch your real library or settings.
 `make demo` re-records `docs/demo.gif` from `demo/demo.tape` (needs
 [VHS](https://github.com/charmbracelet/vhs)).
 
-### Working on bookman alongside
+### Working on bookmgr alongside
 
-bookman comes from the git tag pinned in `pyproject.toml`. To run against an
-unreleased bookman, clone it beside this repo and add `BOOKMAN=local` to any
+bookmgr comes from PyPI, at the release `uv.lock` pins. To run against an
+unreleased bookmgr, clone it beside this repo and add `BOOKMGR=local` to any
 make target:
 
 ```bash
-git clone git@github.com:konoerik/bookman.git ../bookman
-make test BOOKMAN=local                  # or BOOKMAN_DIR=path/to/bookman
+git clone git@github.com:konoerik/bookmgr.git ../bookmgr
+make test BOOKMGR=local                  # or BOOKMGR_DIR=path/to/bookmgr
 ```
 
-To move to a new bookman release, change the tag in `pyproject.toml` and run
-`uv lock`.
+To move to a new bookmgr release, run `uv lock --upgrade-package bookmgr`.
 
 ### Docs
 

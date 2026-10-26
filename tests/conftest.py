@@ -1,4 +1,4 @@
-"""Shared fixtures. Every test runs against its own bookman config."""
+"""Shared fixtures. Every test runs against its own bookmgr config."""
 
 from __future__ import annotations
 
@@ -6,26 +6,26 @@ import shutil
 from pathlib import Path
 
 import pytest
-from bookman import Library, NullSource
+from bookmgr import Library, NullSource
 
 import mock_library
 
 
 @pytest.fixture(autouse=True)
 def isolated_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Point bookman at a config file in `tmp_path` that doesn't exist yet,
-    and the TUI's prefs likewise, and clear `$BOOKMAN_LIBRARY`, so no test
+    """Point bookmgr at a config file in `tmp_path` that doesn't exist yet,
+    and the TUI's prefs likewise, and clear `$BOOKMGR_LIBRARY`, so no test
     sees the user's real library or settings."""
     config = tmp_path / "config" / "config.json"
-    monkeypatch.setenv("BOOKMAN_CONFIG", str(config))
-    monkeypatch.setenv("BOOKMAN_TUI_PREFS", str(tmp_path / "prefs" / "prefs.json"))
-    monkeypatch.delenv("BOOKMAN_LIBRARY", raising=False)
+    monkeypatch.setenv("BOOKMGR_CONFIG", str(config))
+    monkeypatch.setenv("BOOKMGR_TUI_PREFS", str(tmp_path / "prefs" / "prefs.json"))
+    monkeypatch.delenv("BOOKMGR_LIBRARY", raising=False)
     return config
 
 
 @pytest.fixture
 def empty_library(tmp_path: Path) -> Path:
-    """An existing, empty bookman library."""
+    """An existing, empty bookmgr library."""
     root = tmp_path / "library"
     Library(root, source=NullSource())
     return root

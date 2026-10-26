@@ -1,6 +1,6 @@
 # Flows
 
-The authoritative description of what a user does in bookman-tui and what the
+The authoritative description of what a user does in bookmgr-tui and what the
 app does in response. It serves three purposes:
 
 - **Spec.** Behaviour not described here is not a feature. Changing a flow
@@ -16,11 +16,13 @@ path should take. If an implementation needs more, simplify the flow before
 accepting the extra keys.
 
 Architecture context: `docs/ARCHITECTURE.md` (ADR numbers cited below).
-Library behaviour quoted here belongs to bookman, which is authoritative for
+Library behaviour quoted here belongs to bookmgr, which is authoritative for
 it; this file only states what the user sees.
 
-**bookman baseline:** 1.3.0 @ `1bdad64`. Claims about bookman's behaviour or
-limits carry a `[bookman 1.3.0 @ 1bdad64]` tag; re-check them when the baseline moves
+**bookmgr baseline:** 2.0.0 @ `bf61464`. Claims about bookmgr's behaviour or
+limits carry a `[bookmgr 2.0.0 @ bf61464]` tag; re-check them when the baseline moves.
+Tags reading `[bookman 1.3.0 @ 1bdad64]` predate the rename and still hold: 2.0.0
+changed only names, its source matching 1.3.0 once they are mapped
 (see CLAUDE.md).
 
 ---
@@ -35,7 +37,7 @@ limits carry a `[bookman 1.3.0 @ 1bdad64]` tag; re-check them when the baseline 
 - **G-3** A book stays selected across any change to it, including a title
   edit that renames its folder (ADR-3). Exceptions: a removed book
   (REMOVE-3) and `v` working through the review queue (REVIEW-2).
-- **G-4** When bookman refuses something it expected to (a `BookmanError`),
+- **G-4** When bookmgr refuses something it expected to (a `BookmgrError`),
   show its message in plain words in the context where it happened: inline in
   a form, otherwise as a notification. Nothing is lost; the user can correct
   and retry. Any other error is a bug and is not dressed up.
@@ -58,19 +60,19 @@ limits carry a `[bookman 1.3.0 @ 1bdad64]` tag; re-check them when the baseline 
 
 ## START — Launching
 
-*In short:* run `bookman-tui`, optionally with `--library DIR`. It opens the
-same library the `bookman` command uses. If none is set up yet, you're asked
+*In short:* run `bookmgr-tui`, optionally with `--library DIR`. It opens the
+same library the `bookmgr` command uses. If none is set up yet, you're asked
 where it should go.
 
 - **START-1** The library is chosen in this order: `--library DIR`, then
-  `$BOOKMAN_LIBRARY`, then the saved bookman config. This is bookman's own
+  `$BOOKMGR_LIBRARY`, then the saved bookmgr config. This is bookmgr's own
   precedence; the TUI opens the library only through `configured_library`
   and adds nothing to it [bookman 1.3.0 @ 1bdad64].
 - **START-2** If a library is found, the browser opens with every book loaded.
 - **START-3** If no library is configured, the Setup flow runs instead.
 - **START-4** If the saved config file exists but is invalid, show the error
   and the file's path, then offer Setup (which replaces the file) or quit.
-  This applies even with `--library` or `$BOOKMAN_LIBRARY`: bookman reads the
+  This applies even with `--library` or `$BOOKMGR_LIBRARY`: bookmgr reads the
   config for the metadata source whichever way the library was named
   [bookman 1.3.0 @ 1bdad64].
 - **START-5** If the chosen library can't be opened, say why with the path
@@ -83,7 +85,7 @@ where it should go.
 ## SETUP — Choosing a library (first run)
 
 *In short:* type or tab-complete a folder. It's created if it doesn't exist,
-and remembered for both `bookman-tui` and `bookman`.
+and remembered for both `bookmgr-tui` and `bookmgr`.
 
 Key budget: `Enter`, `Enter` to accept the suggested folder; otherwise edit
 the name first.
@@ -100,23 +102,23 @@ the name first.
   "Press `Enter` again to create `<path>`", the second creates it, and
   editing the path cancels the confirmation.
 - **SETUP-3** On confirm, the library is opened (created if needed), then
-  its path is saved to bookman's config keeping the other saved settings
+  its path is saved to bookmgr's config keeping the other saved settings
   (e.g. offline), and the browser opens on it (empty: BROWSE-6). If opening
   fails, nothing is saved (SETUP-4). The exception is a config file that
-  can't be read (START-4): it is replaced first, since bookman reads it to
+  can't be read (START-4): it is replaced first, since bookmgr reads it to
   open any library [bookman 1.3.0 @ 1bdad64].
 - **SETUP-4** If the path names an existing file rather than a folder, or
   can't be created, the error shows inline and nothing is saved.
-- **SETUP-5** An existing bookman library is recognised as the path is
+- **SETUP-5** An existing bookmgr library is recognised as the path is
   typed ("Existing library … Press `Enter` to open it") and opened without a
   confirmation. Any other folder that already has something in it (hidden
-  files aside) is refused inline: "A library needs an empty folder: bookman
+  files aside) is refused inline: "A library needs an empty folder: bookmgr
   fills it with its own copies of your books. Choose a new or empty folder,
   then import from this one." Nothing is saved. An empty folder is used as
   is [bookman 1.3.0 @ 1bdad64]. Pointing a library at an already organised
   collection is in *Not yet*.
 - **SETUP-6** When Setup was reached because `--library` or
-  `$BOOKMAN_LIBRARY` named a library that couldn't be opened (START-5), the
+  `$BOOKMGR_LIBRARY` named a library that couldn't be opened (START-5), the
   chosen folder is saved and opened for this session, and a notification
   says the flag or variable still takes precedence at the next launch. The
   header shows the chosen folder as coming from `config`.
@@ -130,7 +132,7 @@ the name first.
 ## BROWSE — The library browser (home)
 
 *In short:* a list of every book, with details of the selected one beside
-it: cover, author, ISBN, formats, and how sure bookman is about the match.
+it: cover, author, ISBN, formats, and how sure bookmgr is about the match.
 
 - **BROWSE-1** The table shows title, author, formats (e.g. `EPUB PDF`), and a
   marker on books that need review. Ordered by title, ignoring a leading
@@ -152,10 +154,10 @@ it: cover, author, ISBN, formats, and how sure bookman is about the match.
     moves. When it would be too small to recognise (under about 8 rows) it's
     left out. Only details longer than usual then need scrolling
   - title, author, ISBN
-  - the formats; a format bookman couldn't read shows its advice sentence
+  - the formats; a format bookmgr couldn't read shows its advice sentence
     (`ReadIssue.advice`)
   - one status line answering "can I trust these details?", first match wins:
-    - `✓ Checked by you` (reviewed), with how bookman had matched it on a
+    - `✓ Checked by you` (reviewed), with how bookmgr had matched it on a
       muted line under it: "matched online by ISBN", "matched online by
       title and author", "matched online by title only", "not found online"
       or "couldn't read inside the file"
@@ -172,7 +174,7 @@ it: cover, author, ISBN, formats, and how sure bookman is about the match.
   size: `340 books · 12 need review`. With a search active it shows how
   many are listed: `12 of 340 books · 12 need review`.
 - **BROWSE-5** `ctrl+r` reloads the library from disk, to pick up changes made
-  by the `bookman` command or by hand. The selection is kept (G-3), or moves to
+  by the `bookmgr` command or by hand. The selection is kept (G-3), or moves to
   the nearest book if the selected one is gone. When the reload finishes, a
   notification confirms it with the count and what changed: "Reloaded · 31
   books", or "Reloaded · 33 books (2 new, 1 gone)".
@@ -191,9 +193,9 @@ it: cover, author, ISBN, formats, and how sure bookman is about the match.
   status line names the sort and grouping in use: `340 books · 12 need
   review · by author · grouped by status` (the grouping part only when
   grouped). Author sorts by the author as stored (first name first) until
-  bookman offers a surname sort key, books with no author last, ties in
+  bookmgr offers a surname sort key, books with no author last, ties in
   title order. Recently added is newest first by import date
-  (`Book.added`); books imported before bookman recorded it have none and
+  (`Book.added`); books imported before bookmgr recorded it have none and
   come last, in title order [bookman 1.3.0 @ 1bdad64]. Not built yet: `o` toggles Title and
   Author until it is.
 - **BROWSE-9** `g` cycles the grouping: none → Author → Status (needs review,
@@ -201,7 +203,7 @@ it: cover, author, ISBN, formats, and how sure bookman is about the match.
   its size (`── Frank Herbert (3) ──`); the selection skips header rows.
   Groups come in a fixed order: authors A–Z as stored, with "Unknown
   author" last; the three statuses in the order above, a book going where
-  its BROWSE-3 status line puts it; formats in bookman's order (EPUB, PDF,
+  its BROWSE-3 status line puts it; formats in bookmgr's order (EPUB, PDF,
   MOBI). Books follow the sort within each group. Books with several
   formats appear under each of their formats. Search applies within groups:
   a header counts the matching books, and a group with none is left out.
@@ -250,7 +252,7 @@ Key budget: `/`, type, `Enter` (focus goes back to the list).
 
 *In short:* press `i` and give a file or folder (with tab completion). For a
 folder you first see what's in it and what's new, and can pick just the books
-you want. Then bookman looks each one up online and files it while a progress
+you want. Then bookmgr looks each one up online and files it while a progress
 bar shows how long is left. The import holds the screen until it ends or
 you stop it with `x`. Your original files are copied, never moved or
 changed, and importing the same folder again only brings in what's missing.
@@ -265,7 +267,7 @@ everything new; `Enter` on the summary. One book from a folder of many: add
   name visibly lands inside it; the hint line names the full path. `~` is
   expanded and a relative path is taken from the current folder.
   An "Include subfolders" checkbox under the hint line (off by default, as
-  in bookman) applies to folders. `ctrl+s` toggles it while typing the
+  in bookmgr) applies to folders. `ctrl+s` toggles it while typing the
   path: `Tab` completes the path, so focus can't reach the checkbox
   without the mouse.
 - **IMPORT-2** A path that doesn't exist, or an unsupported single file, is an
@@ -287,22 +289,22 @@ everything new; `Enter` on the summary. One book from a folder of many: add
     Import 34 files (33 hidden by the filter)")
   - files and folders whose name starts with `.` (such as `.DS_Store` or
     `.git`; most systems hide them) are left out, with everything inside
-    such a folder, from the list and the import. bookman leaves out those
+    such a folder, from the list and the import. bookmgr leaves out those
     files but not the contents of such folders [bookman 1.3.0 @ 1bdad64],
     so when subfolders are included and a dot-folder holds files, the TUI
     imports the listed files itself (as for a subset) rather than handing
-    bookman the folder
+    bookmgr the folder
   - `Enter` imports the ticked files ("`Enter` Import 180 files"); nothing ticked,
     nothing starts. `Esc` goes back to the path.
 
-  *Already in library* comes from bookman's content check
+  *Already in library* comes from bookmgr's content check
   (`Library.find_files`: offline, each file read once to hash it). A file
-  bookman placed before it recorded hashes isn't recognised until it's
+  bookmgr placed before it recorded hashes isn't recognised until it's
   imported again [bookman 1.3.0 @ 1bdad64].
 - **IMPORT-4** While running, the import screen shows:
   - a progress bar with files done out of total and the time left,
     estimated from the pace so far
-  - the file currently being looked up (bookman reports it before the network
+  - the file currently being looked up (bookmgr reports it before the network
     lookup)
   - running counts: imported, already in library, skipped, failed,
     conflicts
@@ -315,7 +317,7 @@ everything new; `Enter` on the summary. One book from a folder of many: add
 - **IMPORT-7** One bad file never stops the batch; it's counted and listed.
 - **IMPORT-8** If Open Library can't be reached, a notification says books
   are being added from their files only, and the import carries on. Those
-  books are remembered for this session (IMPORT-10). bookman records the
+  books are remembered for this session (IMPORT-10). bookmgr records the
   failure on the book (`Book.lookup` is `FAILED`) [bookman 1.3.0 @ 1bdad64].
 - **IMPORT-9** A conflict means the book already has a *different* file of the
   same kind. Nothing was changed [bookman 1.3.0 @ 1bdad64]. Each conflict
@@ -325,7 +327,7 @@ everything new; `Enter` on the summary. One book from a folder of many: add
     file instead, copy it over `<existing file>` by hand, keeping that
     file name, then `ctrl+r`."
   - "same title only": maybe not the same book. The same advice if it is;
-    if it's a different book, bookman can't keep them apart yet (see
+    if it's a different book, bookmgr can't keep them apart yet (see
     *Not yet*).
 - **IMPORT-10** The summary opens when the import ends or is stopped:
   - counts first; if stopped, "Stopped at 40 of 212. Import the same folder
@@ -377,7 +379,7 @@ BROWSE-7, and a dialog makes the editing state plain) and over a book screen
 
 - **EDIT-1** `e` opens a dialog over the browser, which is dimmed behind it.
   It shows first what helps work out what the book is: its file names,
-  bookman's advice for a file it couldn't read (`ReadIssue.advice`), and
+  bookmgr's advice for a file it couldn't read (`ReadIssue.advice`), and
   why it needs review (BROWSE-3's reasons). Then title, author and ISBN,
   filled with the current values, and a "Look up after saving" checkbox
   (EDIT-7). Focus starts on title; `Tab` and `shift+tab` move between them.
@@ -436,10 +438,10 @@ Key budget: `l`.
   "Found a cover", "Identified by ISBN", "Author filled in"), judged by
   comparing the book before and after. If nothing changed: "No better match
   found". If Open Library can't be reached: "Open Library can't be
-  reached", and nothing changes. With lookups turned off in bookman's
+  reached", and nothing changes. With lookups turned off in bookmgr's
   settings (`Config.offline`): "Lookups are off" [bookman 1.3.0 @ 1bdad64].
 - **LOOKUP-3** A reviewed book keeps its title, author and ISBN; only a
-  missing cover or empty fields can be filled in (bookman's rule, stated so
+  missing cover or empty fields can be filled in (bookmgr's rule, stated so
   the user expects it). A reviewed book that the lookup matched still isn't
   recorded as matched online, so its status line keeps saying how it was
   matched before [bookman 1.3.0 @ 1bdad64] (inbox 2026-10-06).
@@ -452,7 +454,7 @@ touched.
 
 Key budget: `D`, then confirm.
 
-*Not built: waits for bookman to offer removing a book (inbox 2026-10-06;
+*Not built: waits for bookmgr to offer removing a book (inbox 2026-10-06;
 none in [bookman 1.3.0 @ 1bdad64]). Until then, delete the book's folder by
 hand and press `ctrl+r`.*
 
@@ -460,11 +462,11 @@ hand and press `ctrl+r`.*
   formats. Cancel has focus, so `Enter` alone removes nothing; `Esc`
   cancels.
 - **REMOVE-2** Removing takes the whole book: its folder, every format and
-  its cover. Removing one format of a book waits for bookman (FEATURES K8).
+  its cover. Removing one format of a book waits for bookmgr (FEATURES K8).
 - **REMOVE-3** It counts as a change to the library (G-2). Afterwards the
   selection moves to the nearest book (as BROWSE-5 does for a book that's
   gone) and a notification names the book removed.
-- **REMOVE-4** For a book bookman couldn't read, whose advice is to delete it
+- **REMOVE-4** For a book bookmgr couldn't read, whose advice is to delete it
   and import it again (EDIT-1), `D` is that delete.
 
 ## SETTINGS — Configuration
@@ -474,22 +476,22 @@ library is open.
 
 - **SETTINGS-1** The header shows the open library's path on every screen
   (`~` for the home folder), and where that choice came from: `--library`,
-  `$BOOKMAN_LIBRARY`, or `config` (`locate_library`) [bookman 1.3.0 @ 1bdad64].
+  `$BOOKMGR_LIBRARY`, or `config` (`locate_library`) [bookman 1.3.0 @ 1bdad64].
   Nothing in the TUI switches or changes the library.
 - **SETTINGS-2** A settings screen (`s`) arrives with metadata sources, once
-  bookman supports configuring them (ADR-6).
+  bookmgr supports configuring them (ADR-6).
 
 ---
 
 ## Not yet
 
-Deliberately out of scope until bookman offers an API for it, or we decide
+Deliberately out of scope until bookmgr offers an API for it, or we decide
 otherwise. Each needs a flow here before it's built.
 
 - Resolving a format conflict in the TUI (keep or replace a file, or split a
-  wrongly grouped book). bookman has no API for either; merge and split are
+  wrongly grouped book). bookmgr has no API for either; merge and split are
   planned there [bookman 1.3.0 @ 1bdad64].
-- Choosing and configuring metadata sources: bookman deferred a source
+- Choosing and configuring metadata sources: bookmgr deferred a source
   registry until it has a second source; today the one choice is online or
   offline (`Config.offline`) [bookman 1.3.0 @ 1bdad64] (ADR-6). Whether and
   where the TUI exposes the offline switch is undecided (*Open questions*).
@@ -502,21 +504,21 @@ otherwise. Each needs a flow here before it's built.
 - Switching libraries from inside the TUI, as a first-class feature of its
   own rather than a setting (open another library for a look vs. change the
   default; whether to keep a list of recent libraries). Until then, use
-  `--library DIR` or `$BOOKMAN_LIBRARY`. A library can be moved freely (see
+  `--library DIR` or `$BOOKMGR_LIBRARY`. A library can be moved freely (see
   above), so no flow is needed for that.
 - Richer editing on a book screen of its own (the M10 alternative to the
   EDIT dialog): choosing among lookup results when the match is wrong
-  (needs bookman, inbox 2026-10-06; FEATURES K5), more sources than Open
+  (needs bookmgr, inbox 2026-10-06; FEATURES K5), more sources than Open
   Library, and setting a cover by hand. A cover by hand is more likely a
   link (a bookshop page) than an image file on disk, so it waits for more
-  sources; bookman's `set_cover` takes a local image
+  sources; bookmgr's `set_cover` takes a local image
   [bookman 1.3.0 @ 1bdad64]. Until then, a cover comes from Open Library
   only (`l`).
 - Queuing changes instead of refusing them (G-2): an edit saved while a
   lookup runs is refused until it finishes. Queuing would let a run of
   edits go on while lookups catch up. Revisit if refusals get in the way;
   "Look up after saving" (EDIT-7) is the answer for now.
-- Telling the user about books bookman can't read: `scan` skips a broken
+- Telling the user about books bookmgr can't read: `scan` skips a broken
   metadata.json without saying so [bookman 1.3.0 @ 1bdad64] (inbox
   2026-10-06).
 - A cover grid view: a toggle that swaps the table for covers with titles
@@ -527,7 +529,7 @@ otherwise. Each needs a flow here before it's built.
   with the single detail-pane cover first.
 - Field prefixes in search (`author:le guin`, `isbn:978…`) to narrow to one
   field. Plain search (FIND-1) already covers title, author and ISBN;
-  prefixes pay off once bookman exposes more fields (publisher, year).
+  prefixes pay off once bookmgr exposes more fields (publisher, year).
 - Starting from books you already have (SETUP-5 only refuses). Two
   audiences to design for: loose files (e.g. a Downloads folder), where
   "new library + import from here" fits; and an organised collection (a
@@ -565,15 +567,15 @@ otherwise. Each needs a flow here before it's built.
   buttons.
 - A richer details screen of its own, beside the pane used for browsing: a
   summary of the book from online sources and fields of the user's own,
-  such as notes. bookman's `Book` has neither a description nor a notes
-  field [bookman 1.3.0 @ 1bdad64], so both need bookman first. Notes
+  such as notes. bookmgr's `Book` has neither a description nor a notes
+  field [bookman 1.3.0 @ 1bdad64], so both need bookmgr first. Notes
   overlap with EDIT, which a design pass would settle.
 
 ## Open questions
 
-- **BROWSE-8** Surname order needs an author sort key (in bookman's
+- **BROWSE-8** Surname order needs an author sort key (in bookmgr's
   backlog) [bookman 1.3.0 @ 1bdad64].
-- **Offline switch** bookman 1.3.0 can save an offline setting, which the
-  `bookman` command doesn't switch either. Does the TUI get a toggle (a
+- **Offline switch** bookmgr 1.3.0 can save an offline setting, which the
+  `bookmgr` command doesn't switch either. Does the TUI get a toggle (a
   settings screen, which ADR-8 holds back), and should the header say when
   lookups are off?

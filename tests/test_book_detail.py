@@ -6,13 +6,13 @@ import dataclasses
 from pathlib import Path
 
 import pytest
-from bookman import Book, Library, MatchBasis, NullSource
+from bookmgr import Book, Library, MatchBasis, NullSource
 from textual.widgets import Static
 
-from bookman_tui.app import BookmanApp
-from bookman_tui.screens.browser import BrowserScreen
-from bookman_tui.screens.details import DetailsScreen
-from bookman_tui.widgets.book_detail import (
+from bookmgr_tui.app import BookmgrApp
+from bookmgr_tui.screens.browser import BrowserScreen
+from bookmgr_tui.screens.details import DetailsScreen
+from bookmgr_tui.widgets.book_detail import (
     COVER_MIN,
     COVER_ROWS,
     BookDetail,
@@ -21,8 +21,8 @@ from bookman_tui.widgets.book_detail import (
     cover_size,
     trust,
 )
-from bookman_tui.widgets.book_table import BookTable
-from bookman_tui.widgets.cover import Cover
+from bookmgr_tui.widgets.book_table import BookTable
+from bookmgr_tui.widgets.cover import Cover
 
 ISBN, TITLE_AUTHOR, TITLE_ONLY = MatchBasis.ISBN, MatchBasis.TITLE_AUTHOR, MatchBasis.TITLE_ONLY
 
@@ -90,7 +90,7 @@ def test_browse_3_trust_lists_every_reason_in_order(books: dict[str, Book]) -> N
 
 
 def test_browse_3_trust_impossible_combination_is_a_bug(books: dict[str, Book]) -> None:
-    # bookman's needs_review rule forbids this; dataclasses.replace can't
+    # bookmgr's needs_review rule forbids this; dataclasses.replace can't
     # build it either, since needs_review is derived. Guard the branch anyway.
     class Odd:
         id = "odd"
@@ -119,7 +119,7 @@ def test_browse_3_no_author_note_for_initials_spacing(books: dict[str, Book]) ->
 
 def test_browse_3_no_author_note_when_author_came_from_record(books: dict[str, Book]) -> None:
     assert author_note(like(books["Meditations"], author=None)) is None
-    # Meditations' file had no author; bookman filled it from the record.
+    # Meditations' file had no author; bookmgr filled it from the record.
     assert author_note(books["Meditations"]) is None
 
 
@@ -127,7 +127,7 @@ def test_browse_3_no_author_note_when_author_came_from_record(books: dict[str, B
 
 
 async def open_on(mock_root: Path, title: str, size=(130, 40)):
-    app = BookmanApp(library=mock_root)
+    app = BookmgrApp(library=mock_root)
     run = app.run_test(size=size)
     pilot = await run.__aenter__()
     await app.workers.wait_for_complete()

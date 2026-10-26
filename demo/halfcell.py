@@ -1,4 +1,4 @@
-"""Run bookman-tui with half-block covers, for the VHS recording.
+"""Run bookmgr-tui with half-block covers, for the VHS recording.
 
 VHS's terminal answers that it supports sixel, but sixel images don't appear
 in the recording, so every cover would come out blank. Failing
@@ -19,6 +19,6 @@ def _no_answer(*args, **kwargs):
 
 terminal.capture_terminal_response = _no_answer
 
-from bookman_tui import main  # noqa: E402
+from bookmgr_tui import main  # noqa: E402
 
 main()

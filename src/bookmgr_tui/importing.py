@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
-from bookman import (
+from bookmgr import (
     AlreadyInLibrary,
     Book,
     FormatConflictError,
@@ -51,7 +51,7 @@ class Entry:
 
 
 def is_supported(path: Path) -> bool:
-    """Whether bookman has a parser for `path`'s suffix [bookman 1.3.0 @ 1bdad64]."""
+    """Whether bookmgr has a parser for `path`'s suffix [bookman 1.3.0 @ 1bdad64]."""
     return path.suffix.lower() in supported_suffixes()
 
 
@@ -72,7 +72,7 @@ def folder_files(folder: Path, recursive: bool) -> list[Path]:
 def files_in_dot_folders(folder: Path) -> bool:
     """Whether a subfolder of `folder` whose name starts with "." holds a file
     `iter_import(recursive=True)` would take, which `folder_files` leaves out:
-    bookman skips such files by their own name only [bookman 1.3.0 @ 1bdad64]."""
+    bookmgr skips such files by their own name only [bookman 1.3.0 @ 1bdad64]."""
     return any(
         path.is_file() and not path.name.startswith(".") and _dotted(path, folder) for path in folder.rglob("*")
     )
@@ -137,7 +137,7 @@ class ImportJob:
         if self.folder is not None:
             yield from library.iter_import(self.folder, recursive=self.recursive)
             return
-        # A chosen subset: bookman imports a whole folder only, so the
+        # A chosen subset: bookmgr imports a whole folder only, so the
         # batch loop is mirrored here (ADR-4 amendment, inbox 2026-10-04).
         total = len(self.files)
         for index, path in enumerate(self.files, start=1):

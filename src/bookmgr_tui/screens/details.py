@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from bookman import Book
+from bookmgr import Book
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.screen import Screen
 from textual.widgets import Footer, Header
 
-from bookman_tui.widgets.book_detail import BookDetail
+from bookmgr_tui.widgets.book_detail import BookDetail
 
 
 class DetailsScreen(Screen):

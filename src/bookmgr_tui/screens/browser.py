@@ -3,7 +3,7 @@ search, sort and grouping."""
 
 from __future__ import annotations
 
-from bookman import Book
+from bookmgr import Book
 from rich.markup import escape
 from textual import on
 from textual.app import ComposeResult
@@ -14,12 +14,12 @@ from textual.reactive import reactive
 from textual.screen import Screen
 from textual.widgets import DataTable, Footer, Header, Input, Static
 
-from bookman_tui.keys import press
-from bookman_tui.screens.details import DetailsScreen
-from bookman_tui.screens.edit_dialog import EditDialog
-from bookman_tui.store import NEEDS_REVIEW, BookRow, Catalog, Grouping, Sort, arrange, match_summary, status_group
-from bookman_tui.widgets.book_detail import BookDetail
-from bookman_tui.widgets.book_table import BookTable
+from bookmgr_tui.keys import press
+from bookmgr_tui.screens.details import DetailsScreen
+from bookmgr_tui.screens.edit_dialog import EditDialog
+from bookmgr_tui.store import NEEDS_REVIEW, BookRow, Catalog, Grouping, Sort, arrange, match_summary, status_group
+from bookmgr_tui.widgets.book_detail import BookDetail
+from bookmgr_tui.widgets.book_table import BookTable
 
 NARROW = 100
 """Below this many columns the detail pane is hidden (BROWSE-7)."""

@@ -1,4 +1,4 @@
-"""BookmanApp: opens the library and routes to the first screen (START)."""
+"""BookmgrApp: opens the library and routes to the first screen (START)."""
 
 from __future__ import annotations
 
@@ -7,9 +7,9 @@ from copy import deepcopy
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from bookman import (
+from bookmgr import (
     Book,
-    BookmanError,
+    BookmgrError,
     ConfigError,
     ImportEvent,
     Library,
@@ -29,20 +29,20 @@ from textual.reactive import reactive
 from textual.screen import Screen
 from textual.signal import Signal
 
-from bookman_tui import reveal
-from bookman_tui.curating import batch_summary, could_help, lookup_summary
-from bookman_tui.importing import ImportJob
-from bookman_tui.keys import key_name, press
-from bookman_tui.location import display_path, header_text, not_found_reason, sentence
-from bookman_tui.prefs import Prefs, load_prefs, save_prefs
-from bookman_tui.screens.browser import BrowserScreen
-from bookman_tui.screens.import_screen import ImportScreen
-from bookman_tui.screens.setup import SetupScreen
-from bookman_tui.screens.start_problem import StartProblemScreen
-from bookman_tui.store import Catalog, Grouping, Sort
+from bookmgr_tui import reveal
+from bookmgr_tui.curating import batch_summary, could_help, lookup_summary
+from bookmgr_tui.importing import ImportJob
+from bookmgr_tui.keys import key_name, press
+from bookmgr_tui.location import display_path, header_text, not_found_reason, sentence
+from bookmgr_tui.prefs import Prefs, load_prefs, save_prefs
+from bookmgr_tui.screens.browser import BrowserScreen
+from bookmgr_tui.screens.import_screen import ImportScreen
+from bookmgr_tui.screens.setup import SetupScreen
+from bookmgr_tui.screens.start_problem import StartProblemScreen
+from bookmgr_tui.store import Catalog, Grouping, Sort
 
 if TYPE_CHECKING:
-    from bookman_tui.screens.edit_dialog import EditDialog
+    from bookmgr_tui.screens.edit_dialog import EditDialog
 
 
 def reload_summary(before: Catalog | None, after: Catalog) -> str:
@@ -59,10 +59,10 @@ def reload_summary(before: Catalog | None, after: Catalog) -> str:
     return f"Reloaded · {len(after)} {noun}{detail}"
 
 
-class BookmanApp(App):
-    """The bookman TUI. Owns the `Library` and the loaded books (ADR-3)."""
+class BookmgrApp(App):
+    """The bookmgr TUI. Owns the `Library` and the loaded books (ADR-3)."""
 
-    TITLE = "bookman"
+    TITLE = "bookmgr"
     CSS_PATH = "app.tcss"
     BINDINGS = [Binding("question_mark", "toggle_help", "Keys", key_display="?")]
 
@@ -99,9 +99,9 @@ class BookmanApp(App):
         """The change to the library running other than an import, as the
         notice that refuses another (G-2): "Looking up “Dune”."."""
         prefs = load_prefs()
-        self.set_reactive(BookmanApp.sort, prefs.sort)
-        self.set_reactive(BookmanApp.grouping, prefs.grouping)
-        self.set_reactive(BookmanApp.lookup_after_edit, prefs.lookup_after_edit)
+        self.set_reactive(BookmgrApp.sort, prefs.sort)
+        self.set_reactive(BookmgrApp.grouping, prefs.grouping)
+        self.set_reactive(BookmgrApp.lookup_after_edit, prefs.lookup_after_edit)
 
     def watch_sort(self) -> None:
         self._save_prefs()
@@ -132,11 +132,11 @@ class BookmanApp(App):
             self.show_setup()
             return
         except ConfigError as error:
-            # bookman's message starts with the file, which is shown above it.
+            # bookmgr's message starts with the file, which is shown above it.
             reason = str(error).removeprefix(f"{config_path()}: ")
             self._show(
                 StartProblemScreen(
-                    "bookman's config file can't be read",
+                    "bookmgr's config file can't be read",
                     display_path(config_path()),
                     "Choosing a folder replaces this file with a new one.",
                     sentence(reason),
@@ -212,8 +212,8 @@ class BookmanApp(App):
         self.open_library(chosen=message.path)
         if self.library_arg is not None:
             override = "--library"
-        elif os.environ.get("BOOKMAN_LIBRARY"):
-            override = "$BOOKMAN_LIBRARY"
+        elif os.environ.get("BOOKMGR_LIBRARY"):
+            override = "$BOOKMGR_LIBRARY"
         else:
             return
         self.notify(f"Saved as your library. {override} still takes precedence the next time you start.")
@@ -271,7 +271,7 @@ class BookmanApp(App):
         assert self.library is not None
         try:
             edited = self.library.edit(deepcopy(book), **changes)
-        except BookmanError as error:
+        except BookmgrError as error:
             self.call_from_thread(self._edit_refused, dialog, error)
             return
         if not (lookup and could_help(edited)):
@@ -281,8 +281,8 @@ class BookmanApp(App):
         after = self.library.reidentify(deepcopy(edited))
         self.call_from_thread(self._finish, after, f"Saved · {lookup_summary(edited, after)}")
 
-    def _edit_refused(self, dialog: EditDialog, error: BookmanError) -> None:
-        """bookman refused the edit: say why in the dialog, which keeps
+    def _edit_refused(self, dialog: EditDialog, error: BookmgrError) -> None:
+        """bookmgr refused the edit: say why in the dialog, which keeps
         everything typed (EDIT-5, G-4)."""
         self.writing = None
         dialog.refused(error)
@@ -450,4 +450,4 @@ class BookmanApp(App):
 
 
 if __name__ == "__main__":
-    BookmanApp().run()
+    BookmgrApp().run()

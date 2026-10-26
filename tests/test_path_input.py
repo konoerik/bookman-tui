@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 from textual.widgets import Input, Static
 
-from bookman_tui.app import BookmanApp
-from bookman_tui.widgets.path_input import Completion, complete, format_choices
+from bookmgr_tui.app import BookmgrApp
+from bookmgr_tui.widgets.path_input import Completion, complete, format_choices
 
 
 @pytest.fixture
@@ -60,7 +60,7 @@ def test_import_1_long_choice_lists_are_cut() -> None:
 
 
 async def test_setup_1_tab_completes_in_setup(tree: Path) -> None:
-    app = BookmanApp()
+    app = BookmgrApp()
     async with app.run_test() as pilot:
         field = app.screen.query_one("#setup-path", Input)
         field.value = "~/Co"

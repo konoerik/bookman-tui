@@ -7,35 +7,21 @@
 Skeleton first, in small milestones; each ends with a visual review by the
 user before the next starts.
 
-**M13 First push to GitHub** (`git@github.com:konoerik/bookman-tui.git`,
-empty). Decided 2026-10-17: depend on bookman by git URL pinned to a tag
-(PyPI's `bookman` is an unrelated bookmarks tool; rename filed to inbox);
-keep all claudify and docs files tracked.
-- [x] Dependency: `bookman @ git+https://github.com/konoerik/bookman.git@v1.3.0`,
-  relocked. A path source can't stay (the lock keeps `../bookman`, clones
-  fail), so `make … BOOKMAN=local` overlays the checkout
-- [x] Verify a clean copy with no `../bookman`: `uv sync`, `uv run pytest`
-  (209 passed), `uv tool install .`; recheck `uv tool install git+…` after push
-- [x] README: what it is, install, dev setup beside bookman, running,
-  `make try-*`
-- [x] MIT LICENSE; `pyproject.toml` license and project URLs
-- [x] CLAUDE.md: describe the new dependency setup
-- [x] bookman `crypto` extra on (encrypted PDFs read, not filed by name)
-- [x] Demo GIF: `demo/demo.tape` → `docs/demo.gif` via `make demo` (VHS),
-  shown in the README; approved 2026-10-17
-- [x] Add `origin`, push `main`, tag `v1.0.0` (version 1.0.0; small feature updates bump minor)
-
 
 ## Backlog
 <!-- Accepted but not yet active. Load this section only when planning or prioritizing. -->
 
-- **bookman as a release wheel?** (low) — from M13 (2026-10-17): bookman's
-  README installs the wheel from its GitHub Release; we use the git URL +
-  tag (same release, but cloned and built on install). Decide together
-  with whether either project goes to PyPI, so the dependency changes once
+- **Demo with real public-domain covers** (medium) — from M13 review
+  (2026-10-17): the demo's mock covers are plain colour fields. A separate
+  demo catalogue of ~15–20 public-domain books (e.g. Gatsby 1925, Oz 1900,
+  Dracula, The Time Machine, Alice) with first-edition covers from
+  Wikimedia Commons, stored small in the repo with a CREDITS file (check
+  each image's PD status); same review-state mix so the edit scene still
+  works; the test mock stays as is. The GIF stays half-block (~28×42 px),
+  so add a still screenshot you take in Ghostty (sixel) to the README
 - **CI** (low) — from M13 (2026-10-17): GitHub Actions running `uv sync`
-  + `uv run pytest` on Python 3.10 and latest; also catches bookman
-  git-dependency breakage
+  + `uv run pytest` on Python 3.10 and latest; also catches a new bookmgr
+  release breaking the TUI
 - **Import screen revisit** (low) — from M12 (2026-10-16): fine for now,
   but on short terminals (about 20 rows) the "Include subfolders" checkbox
   drops below the panel, and a merged path + live preview screen was
@@ -92,3 +78,17 @@ keep all claudify and docs files tracked.
   or goes on short views and sits beside the details from 60 columns
   (BROWSE-3/7); hint voice "Press `x` to …" with footer-drawn keys (G-7);
   table look kept as it is. *Done, approved 2026-10-16*
+- **M13 First push to GitHub** — bookman as a git dependency pinned to
+  `v1.3.0` with the `crypto` extra; the `../bookman` path source dropped
+  for `make … BOOKMAN=local` (ADR-12; PyPI name clash filed to inbox).
+  README with a VHS demo GIF (`make demo`), MIT LICENSE, project metadata,
+  version 1.0.0; claudify and docs files stay tracked. Pushed to
+  `git@github.com:konoerik/bookman-tui.git`, tagged `v1.0.0`; `uv tool
+  install git+…` checked. *Done, approved 2026-10-17*
+- **M14 Rename to bookmgr-tui; bookmgr from PyPI** — bookman 1.3.0 became
+  `bookmgr` 2.0.0 on PyPI with no other change [bookmgr 2.0.0 @ bf61464];
+  dependency `bookmgr[crypto]>=2.0` (ADR-13 supersedes ADR-12). The app
+  renamed to match: `bookmgr-tui`, `bookmgr_tui`, `BookmgrApp`,
+  `BOOKMGR_*` env vars, `bookmgr-tui` prefs folder, `BOOKMGR=local`; clean
+  break, no aliases. Old stamps kept as history. Test library and prefs
+  moved locally. Version 2.0.0, tagged `v2.0.0`. *Done, approved 2026-10-26*

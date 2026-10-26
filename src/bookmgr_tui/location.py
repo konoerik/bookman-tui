@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from bookman import LibraryLocation, LibraryNotFoundReason, LibraryOrigin
+from bookmgr import LibraryLocation, LibraryNotFoundReason, LibraryOrigin
 
 ORIGIN_LABELS = {
     LibraryOrigin.EXPLICIT: "--library",
-    LibraryOrigin.ENVIRONMENT: "$BOOKMAN_LIBRARY",
+    LibraryOrigin.ENVIRONMENT: "$BOOKMGR_LIBRARY",
     LibraryOrigin.CONFIG: "config",
 }
 
@@ -50,7 +50,7 @@ NOT_FOUND_REASONS = {
     ),
     LibraryNotFoundReason.NOT_A_DIRECTORY: "This is a file, not a folder.",
     LibraryNotFoundReason.NOT_A_LIBRARY: (
-        "This folder holds other files and isn't a bookman library. "
+        "This folder holds other files and isn't a bookmgr library. "
         "A library needs a folder of its own."
     ),
 }

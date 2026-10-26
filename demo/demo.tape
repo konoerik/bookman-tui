@@ -14,13 +14,13 @@ Set TypingSpeed 90ms
 Set Theme "Builtin Dark"
 
 Hide
-Type `export HOME=$PWD/.dev/demo/home BOOKMAN_CONFIG=$PWD/.dev/demo/config.json BOOKMAN_TUI_PREFS=$PWD/.dev/demo/prefs.json BOOKMAN_LIBRARY= PS1="$ " && source .venv/bin/activate && alias bookman-tui="python $PWD/demo/halfcell.py" && cd ~ && clear`
+Type `export HOME=$PWD/.dev/demo/home BOOKMGR_CONFIG=$PWD/.dev/demo/config.json BOOKMGR_TUI_PREFS=$PWD/.dev/demo/prefs.json BOOKMGR_LIBRARY= PS1="$ " && source .venv/bin/activate && alias bookmgr-tui="python $PWD/demo/halfcell.py" && cd ~ && clear`
 Enter
 Sleep 500ms
 Show
 
 # Launch and browse
-Type "bookman-tui"
+Type "bookmgr-tui"
 Sleep 400ms
 Enter
 Sleep 3s
@@ -39,7 +39,7 @@ Sleep 1s
 Type@800ms "gg"
 Sleep 2s
 
-# Fix a book bookman couldn't identify: it leaves the review queue
+# Fix a book bookmgr couldn't identify: it leaves the review queue
 # (8 up from "Children of Dune" to "field-guide-to-moths": recount if
 # tools/mock_library.py changes)
 Type@250ms "kkkkkkkk"

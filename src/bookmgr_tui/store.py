@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TypeVar, Union
 
-from bookman import Book, FormatKind
+from bookmgr import Book, FormatKind
 
 ARTICLES = ("the ", "a ", "an ")
 
@@ -100,7 +100,7 @@ class Catalog:
     which changes when a title edit renames the folder (G-3, ADR-3).
 
     Raises:
-        ValueError: If constructed with two books sharing an `id` (bookman
+        ValueError: If constructed with two books sharing an `id` (bookmgr
             guarantees ids are unique, so this is a bug, not user data).
     """
 
@@ -163,7 +163,7 @@ class Sort(str, Enum):
     """`title_sort_key`, ties by author (missing last), then id: BROWSE-1."""
     AUTHOR = "author"
     """The author as stored, casefolded, first name first (no surname key in
-    bookman yet); books with no author last; ties in title order."""
+    bookmgr yet); books with no author last; ties in title order."""
 
     def next(self) -> Sort:
         """The sort `o` moves to, wrapping round."""
@@ -182,7 +182,7 @@ class Grouping(str, Enum):
     book goes where its BROWSE-3 status line puts it: reviewed first, then
     the review queue, else matched online."""
     FORMAT = "format"
-    """One group per `FormatKind` (EPUB, PDF, MOBI, in bookman's order); a
+    """One group per `FormatKind` (EPUB, PDF, MOBI, in bookmgr's order); a
     book with several formats is in each of their groups."""
 
     def next(self) -> Grouping:

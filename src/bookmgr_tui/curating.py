@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from bookman import Book, LookupOutcome, MatchBasis
+from bookmgr import Book, LookupOutcome, MatchBasis
 
 IDENTIFIED = {
     MatchBasis.ISBN: "Identified by ISBN",
