@@ -1,6 +1,6 @@
 [project]
 name = "bookmgr-tui"
-version = "2.0.0"
+version = "2.0.1"
 description = "Textual terminal front end for the bookmgr ebook library."
 readme = "README.pypi.md"
 authors = [
