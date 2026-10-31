@@ -19,7 +19,7 @@ MOCK := .dev/mock-library
 BIG := .dev/mock-big
 SANDBOX_ENV := BOOKMGR_CONFIG=$(CURDIR)/$(SANDBOX)/config.json BOOKMGR_TUI_PREFS=$(CURDIR)/$(SANDBOX)/prefs.json BOOKMGR_LIBRARY=
 
-.PHONY: test run dev console mock try-mock try-big try-real try-firstrun try-empty try-import try-missing try-notlibrary try-badconfig clean-sandbox demo
+.PHONY: test run dev console mock try-mock try-big try-real try-firstrun try-empty try-import try-missing try-notlibrary try-badconfig clean-sandbox demo screenshot demo-library
 
 test:
 	$(UV_RUN) pytest
@@ -94,12 +94,18 @@ clean-sandbox:
 	rm -rf $(SANDBOX)
 	mkdir -p $(SANDBOX)
 
-# The README GIF (docs/demo.gif) from demo/demo.tape. Needs VHS.
+# The README GIF (docs/demo.gif) from demo/demo.tape and the PyPI readme
+# screenshot (docs/screenshot.png) from demo/screenshot.tape. Need VHS.
 # A fresh mock library at .dev/demo/home/Books, offline, lookups after edits off.
 DEMO := .dev/demo
-demo:
+demo: demo-library
+	vhs demo/demo.tape
+
+screenshot: demo-library
+	vhs demo/screenshot.tape
+
+demo-library:
 	rm -rf $(DEMO) && mkdir -p $(DEMO)/home
 	$(UV_RUN) python tools/mock_library.py $(DEMO)/home/Books --force
 	$(UV_RUN) python -c "from pathlib import Path; from bookmgr import Config, save_config; save_config(Config(library=Path('$(CURDIR)/$(DEMO)/home/Books'), offline=True), Path('$(DEMO)/config.json'))"
 	echo '{"lookup_after_edit": false}' > $(DEMO)/prefs.json
-	vhs demo/demo.tape

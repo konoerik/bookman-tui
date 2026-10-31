@@ -14,12 +14,14 @@ interface to it.
 
 ## Install
 
-Requires Python 3.10+. bookmgr-tui isn't on PyPI yet; install it straight
-from GitHub with [uv](https://docs.astral.sh/uv/):
+Requires Python 3.10+. Install it from PyPI with
+[uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv tool install git+https://github.com/konoerik/bookmgr-tui
+uv tool install bookmgr-tui
 ```
+
+(`pipx install bookmgr-tui` works too.)
 
 This pulls in [bookmgr](https://pypi.org/project/bookmgr/) from PyPI.
 
@@ -71,8 +73,10 @@ The `try-*` targets (`try-mock`, `try-import`, `try-firstrun`, …; see the
 `Makefile`) run the app with its own config under `.dev/sandbox`, so they
 never touch your real library or settings.
 
-`make demo` re-records `docs/demo.gif` from `demo/demo.tape` (needs
-[VHS](https://github.com/charmbracelet/vhs)).
+`make demo` re-records `docs/demo.gif` from `demo/demo.tape`, and
+`make screenshot` re-renders `docs/screenshot.png` (the image on PyPI,
+whose page shows `README.pypi.md`) from `demo/screenshot.tape`. Both need
+[VHS](https://github.com/charmbracelet/vhs).
 
 ### Working on bookmgr alongside
 
